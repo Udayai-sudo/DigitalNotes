@@ -1,10 +1,11 @@
 {
   "id": "stringstack-learning-book",
-  "title": "Study Material",
-  "subtitle": "StringStack.ai Learning Series",
+  "title": "IT Interview Guide",
+  "subtitle": "10 Questions & Answers · StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
   "accentColor": "#C6A43B",
-  "autoTitleFromFirstPdf": true
+  "autoTitleFromFirstPdf": false,
+  "chapterSortMode": "daily-append"
 }

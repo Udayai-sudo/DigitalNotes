@@ -1,33 +1,44 @@
-# Upload chapters here
+# Daily PDF uploads — Content Team Guide
 
-Drop your daily PDF files in this folder. They are **automatically added to the book** — no code changes needed.
+Drop new PDFs here every day. They are **automatically appended** to the book in linear order.
 
-## Naming (recommended)
-
-Use a number prefix so chapters stay in order:
+## Daily workflow
 
 ```
-01-introduction-to-java.pdf
-02-variables-and-data-types.pdf
-03-control-flow.pdf
-10-advanced-collections.pdf
+Day 1   →  upload  introduction.pdf          →  Book: Chapter 1
+Day 2   →  upload  variables.pdf              →  Book: Ch 1 → Ch 2 (linear)
+Day 3   →  upload  control-flow.pdf           →  Book: Ch 1 → Ch 2 → Ch 3
+Day 11  →  upload  advanced-collections.pdf   →  Appended as Chapter 11
 ```
 
-Also supported:
+**No code changes. No manifest editing. Just drop the file.**
+
+## How order works
+
+Default mode: **`daily-append`** — chapters are ordered by upload date (first uploaded = first chapter, new uploads always go to the end).
+
+Optional numbered filenames (also supported):
 
 ```
-Chapter 1 - Introduction.pdf
-Chapter 2 - Variables.pdf
-my-topic.pdf
+01-introduction.pdf
+02-variables.pdf
+11-advanced-collections.pdf
 ```
 
-## What happens
+Optional date prefix:
 
-1. You copy a PDF into this folder
-2. The dev server detects the new file instantly
-3. The book manifest is rebuilt
-4. The reader refreshes the table of contents and page count
+```
+2026-07-11-advanced-collections.pdf
+```
 
-## Book settings
+## What students see
 
-Edit `content/book.config.json` to change title, subtitle, and cover colors.
+- All chapters appear as **one continuous book**
+- Page 1 of Chapter 1 → last page of Chapter N in linear order
+- Table of contents updates automatically
+- New chapters trigger an in-app notification
+
+## Production
+
+Run `npm run sync-chapters` after uploading PDFs (or on each deploy).  
+With `npm run dev`, changes are detected instantly.

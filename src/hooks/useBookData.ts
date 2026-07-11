@@ -8,6 +8,8 @@ import {
 import { getPdfPageCount } from '../services/pdfService';
 import type { BookManifest, FlatPage } from '../types/book';
 
+const POLL_INTERVAL_MS = 30_000;
+
 interface UseBookDataResult {
   manifest: BookManifest | null;
   pages: FlatPage[];
@@ -17,6 +19,8 @@ interface UseBookDataResult {
   readingTimeMinutes: number;
   loading: boolean;
   error: string | null;
+  newChaptersAdded: number;
+  dismissNewChapters: () => void;
   refetch: () => void;
 }
 
@@ -25,7 +29,9 @@ export function useBookData(): UseBookDataResult {
   const [pages, setPages] = useState<FlatPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [newChaptersAdded, setNewChaptersAdded] = useState(0);
   const hasLoaded = useRef(false);
+  const previousChapterCount = useRef(0);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -49,6 +55,12 @@ export function useBookData(): UseBookDataResult {
         totalPages: chaptersWithCounts.reduce((sum, ch) => sum + (ch.pageCount ?? 0), 0),
       };
 
+      const nextCount = enriched.chapters.length;
+      if (hasLoaded.current && nextCount > previousChapterCount.current) {
+        setNewChaptersAdded(nextCount - previousChapterCount.current);
+      }
+      previousChapterCount.current = nextCount;
+
       setManifest(enriched);
       setPages(flattenChaptersToPages(enriched));
       hasLoaded.current = true;
@@ -59,6 +71,10 @@ export function useBookData(): UseBookDataResult {
     }
   }, []);
 
+  const dismissNewChapters = useCallback(() => {
+    setNewChaptersAdded(0);
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
@@ -67,6 +83,11 @@ export function useBookData(): UseBookDataResult {
     const onFocus = () => void load({ silent: true });
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
+  }, [load]);
+
+  useEffect(() => {
+    const interval = setInterval(() => void load({ silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, [load]);
 
   useEffect(() => {
@@ -91,6 +112,8 @@ export function useBookData(): UseBookDataResult {
     readingTimeMinutes,
     loading,
     error,
+    newChaptersAdded,
+    dismissNewChapters,
     refetch: () => void load(),
   };
 }

@@ -2,14 +2,27 @@ import { useState } from 'react';
 import { useBookData } from '../hooks/useBookData';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 import { BookCover } from './book/BookCover';
+import { EmptyBookView } from './EmptyBookView';
+import { NewChaptersBanner } from './reader/NewChaptersBanner';
 import { ReadingView } from './ReadingView';
 import { Button } from './ui/Button';
 
 type AppView = 'cover' | 'reading';
 
 export function BookReaderApp() {
-  const { manifest, pages, chapterStarts, chapterCount, totalPages, readingTimeMinutes, loading, error, refetch } =
-    useBookData();
+  const {
+    manifest,
+    pages,
+    chapterStarts,
+    chapterCount,
+    totalPages,
+    readingTimeMinutes,
+    loading,
+    error,
+    newChaptersAdded,
+    dismissNewChapters,
+    refetch,
+  } = useBookData();
 
   const [view, setView] = useState<AppView>('cover');
   const [startPageIndex, setStartPageIndex] = useState(0);
@@ -47,31 +60,38 @@ export function BookReaderApp() {
   const handleStartReading = (fromSaved?: boolean) => {
     const savedPage = savedProgress.getSavedPage();
     setStartPageIndex(fromSaved ? savedPage : 0);
+    dismissNewChapters();
     setView('reading');
   };
 
-  if (view === 'reading') {
-    return (
-      <ReadingView
-        manifest={manifest}
-        pages={pages}
-        chapterStarts={chapterStarts}
-        chapterCount={chapterCount}
-        readingTimeMinutes={readingTimeMinutes}
-        initialPageIndex={startPageIndex}
-        onBackToCover={() => setView('cover')}
-      />
-    );
-  }
-
   return (
-    <BookCover
-      manifest={manifest}
-      chapterCount={chapterCount}
-      totalPages={totalPages}
-      readingTimeMinutes={readingTimeMinutes}
-      savedPageIndex={savedProgress.getSavedPage()}
-      onStartReading={handleStartReading}
-    />
+    <>
+      {view === 'reading' ? (
+        pages.length === 0 ? (
+          <EmptyBookView onBackToCover={() => setView('cover')} />
+        ) : (
+          <ReadingView
+            manifest={manifest}
+            pages={pages}
+            chapterStarts={chapterStarts}
+            chapterCount={chapterCount}
+            readingTimeMinutes={readingTimeMinutes}
+            initialPageIndex={startPageIndex}
+            onBackToCover={() => setView('cover')}
+          />
+        )
+      ) : (
+        <BookCover
+          manifest={manifest}
+          chapterCount={chapterCount}
+          totalPages={totalPages}
+          readingTimeMinutes={readingTimeMinutes}
+          savedPageIndex={savedProgress.getSavedPage()}
+          onStartReading={handleStartReading}
+        />
+      )}
+
+      <NewChaptersBanner count={newChaptersAdded} onDismiss={dismissNewChapters} />
+    </>
   );
 }

@@ -19,6 +19,7 @@ function humanize(value) {
 function slugify(value) {
   return value
     .toLowerCase()
+    .replace(/\.pdf$/i, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 }
@@ -26,11 +27,21 @@ function slugify(value) {
 function parseChapterFilename(filename) {
   const base = filename.replace(/\.pdf$/i, '');
 
+  const dated = base.match(/^(\d{4}-\d{2}-\d{2})[-_.\s]+(.+)$/i);
+  if (dated) {
+    return {
+      order: null,
+      title: humanize(dated[2]),
+      sortDate: dated[1],
+    };
+  }
+
   const numbered = base.match(/^(\d+)[-_.\s]+(.+)$/i);
   if (numbered) {
     return {
       order: Number.parseInt(numbered[1], 10),
       title: humanize(numbered[2]),
+      sortDate: null,
     };
   }
 
@@ -40,12 +51,14 @@ function parseChapterFilename(filename) {
     return {
       order: Number.parseInt(chapterPrefix[1], 10),
       title: humanize(rest || `Chapter ${chapterPrefix[1]}`),
+      sortDate: null,
     };
   }
 
   return {
     order: null,
     title: humanize(base),
+    sortDate: null,
   };
 }
 
@@ -57,13 +70,41 @@ function readBookConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 }
 
-function scanChapterPdfs() {
+function getFileAddedTime(stats) {
+  const birthtime = stats.birthtimeMs;
+  if (birthtime && birthtime > 0) return birthtime;
+  return stats.mtimeMs;
+}
+
+function sortChapterFiles(files, sortMode) {
+  const mode = sortMode ?? 'daily-append';
+  const allNumbered = files.length > 0 && files.every((file) => file.order !== null);
+
+  if (mode === 'numbered' || allNumbered) {
+    return [...files].sort((a, b) => {
+      const orderDiff = (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
+      if (orderDiff !== 0) return orderDiff;
+      return a.addedAtMs - b.addedAtMs;
+    });
+  }
+
+  // daily-append: first uploaded = first chapter, each new PDF appends at the end
+  return [...files].sort((a, b) => {
+    if (a.sortDate && b.sortDate) {
+      const dateDiff = a.sortDate.localeCompare(b.sortDate);
+      if (dateDiff !== 0) return dateDiff;
+    }
+    return a.addedAtMs - b.addedAtMs;
+  });
+}
+
+function scanChapterPdfs(sortMode) {
   if (!fs.existsSync(CHAPTERS_DIR)) {
     fs.mkdirSync(CHAPTERS_DIR, { recursive: true });
     return [];
   }
 
-  return fs
+  const files = fs
     .readdirSync(CHAPTERS_DIR)
     .filter((file) => file.toLowerCase().endsWith('.pdf'))
     .map((filename) => {
@@ -75,37 +116,36 @@ function scanChapterPdfs() {
         filename,
         filePath,
         uploadedAt: stats.mtime.toISOString(),
+        addedAtMs: getFileAddedTime(stats),
         ...parsed,
       };
-    })
-    .sort((a, b) => {
-      if (a.order !== null && b.order !== null) return a.order - b.order;
-      if (a.order !== null) return -1;
-      if (b.order !== null) return 1;
-      return a.filename.localeCompare(b.filename, undefined, { numeric: true });
     });
+
+  return sortChapterFiles(files, sortMode);
 }
 
 export function buildManifest() {
   const config = readBookConfig();
-  const pdfFiles = scanChapterPdfs();
+  const pdfFiles = scanChapterPdfs(config.chapterSortMode);
 
   const chapters = pdfFiles.map((file, index) => {
-    const order = file.order ?? index + 1;
-    const title = file.title || `Chapter ${order}`;
+    const linearOrder = index + 1;
+    const title = file.title || `Chapter ${linearOrder}`;
 
     return {
-      id: slugify(`${order}-${title}`) || `chapter-${order}`,
+      id: slugify(file.filename) || `chapter-${linearOrder}`,
       title,
-      order,
+      order: linearOrder,
       pdfUrl: `/chapters/${encodeURIComponent(file.filename)}`,
       uploadedAt: file.uploadedAt,
+      filename: file.filename,
     };
   });
 
   return {
     ...config,
     version: String(chapters.length),
+    chapterCount: chapters.length,
     updatedAt: new Date().toISOString(),
     chapters,
     totalPages: undefined,
@@ -131,8 +171,8 @@ export const paths = {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const manifest = writeManifest();
-  console.log(`Book manifest updated: ${manifest.chapters.length} chapter(s)`);
+  console.log(`Book manifest updated: ${manifest.chapters.length} chapter(s) — linear reading order`);
   for (const chapter of manifest.chapters) {
-    console.log(`  ${chapter.order}. ${chapter.title}`);
+    console.log(`  ${chapter.order}. ${chapter.title} (${chapter.filename})`);
   }
 }

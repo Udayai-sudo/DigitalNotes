@@ -1,13 +1,24 @@
 {
   "id": "stringstack-learning-book",
-  "title": "Study Material",
-  "subtitle": "StringStack.ai Learning Series",
+  "title": "IT Interview Guide",
+  "subtitle": "10 Questions & Answers · StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
   "accentColor": "#C6A43B",
-  "autoTitleFromFirstPdf": true,
-  "version": "0",
-  "updatedAt": "2026-07-11T11:23:30.091Z",
-  "chapters": []
+  "autoTitleFromFirstPdf": false,
+  "chapterSortMode": "daily-append",
+  "version": "1",
+  "chapterCount": 1,
+  "updatedAt": "2026-07-11T12:00:15.970Z",
+  "chapters": [
+    {
+      "id": "01-textbook",
+      "title": "Textbook",
+      "order": 1,
+      "pdfUrl": "/chapters/01-textbook.pdf",
+      "uploadedAt": "2026-07-11T10:50:19.661Z",
+      "filename": "01-textbook.pdf"
+    }
+  ]
 }
