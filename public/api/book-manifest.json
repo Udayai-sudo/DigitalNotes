@@ -1,24 +1,26 @@
 {
-  "id": "stringstack-learning-book",
-  "title": "IT Interview Guide",
-  "subtitle": "10 Questions & Answers · StringStack.ai",
+  "id": "stringstack-02-demo-2",
+  "slug": "02-demo-2",
+  "title": "Demo 2",
+  "subtitle": "Day 02 · StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
   "accentColor": "#C6A43B",
   "autoTitleFromFirstPdf": false,
-  "chapterSortMode": "daily-append",
+  "chapterSortMode": "numbered",
+  "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-11T20:11:31.695Z",
+  "updatedAt": "2026-07-11T21:49:41.585Z",
   "chapters": [
     {
-      "id": "01-textbook",
-      "title": "Textbook",
+      "id": "02-demo-2",
+      "title": "Demo 2",
       "order": 1,
-      "pdfUrl": "/chapters/01-textbook.pdf",
-      "uploadedAt": "2026-07-11T18:36:37.098Z",
-      "filename": "01-textbook.pdf"
+      "pdfUrl": "/chapters/02-demo-2.pdf",
+      "uploadedAt": "2026-07-11T20:06:57.658Z",
+      "filename": "02-demo-2.pdf"
     }
   ]
 }
