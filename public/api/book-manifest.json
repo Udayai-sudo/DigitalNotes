@@ -12,14 +12,14 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-11T21:49:41.585Z",
+  "updatedAt": "2026-07-11T22:27:28.455Z",
   "chapters": [
     {
       "id": "02-demo-2",
       "title": "Demo 2",
       "order": 1,
       "pdfUrl": "/chapters/02-demo-2.pdf",
-      "uploadedAt": "2026-07-11T20:06:57.658Z",
+      "uploadedAt": "2026-07-11T22:26:09.522Z",
       "filename": "02-demo-2.pdf"
     }
   ]
