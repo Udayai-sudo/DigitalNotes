@@ -4,8 +4,10 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { bookChaptersPlugin } from './scripts/vite-plugin-book-chapters';
 
+// Local: http://localhost:5173/
+// GitHub Pages: set VITE_BASE=/TextBook/ in CI
 export default defineConfig({
-  base: '/TextBook/',   // <-- Add this line
+  base: process.env.VITE_BASE || '/',
 
   plugins: [react(), tailwindcss(), bookChaptersPlugin()],
 

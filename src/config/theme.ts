@@ -55,10 +55,16 @@ export const themeConfig = {
   },
 } as const;
 
+const viteBase = import.meta.env.BASE_URL || '/';
+
+function brandAsset(path: string): string {
+  return `${viteBase}${path.replace(/^\//, '')}`;
+}
+
 export const brand = {
   name: 'StringStack.ai',
   tagline: 'Digital Learning Platform',
   subtitle: 'Secure · Structured · Smart Learning',
-  logo: '/stringstack-logo.png',
-  logoIcon: '/favicon-icon.png',
+  logo: brandAsset('/stringstack-logo.png'),
+  logoIcon: brandAsset('/favicon-icon.png'),
 };

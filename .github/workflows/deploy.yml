@@ -32,6 +32,8 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          VITE_BASE: /TextBook/
         run: npm run build
 
       - name: Setup Pages

@@ -1,15 +1,28 @@
 import type { BookManifest, FlatPage } from '../types/book';
 
-const MANIFEST_URL = '/api/book-manifest.json';
+/** Prefix public asset paths with Vite base (e.g. /TextBook/ on GitHub Pages). */
+export function withBase(assetPath: string): string {
+  if (!assetPath) return assetPath;
+  if (/^https?:\/\//i.test(assetPath)) return assetPath;
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base}${assetPath.replace(/^\//, '')}`;
+}
 
 export async function fetchBookManifest(): Promise<BookManifest> {
-  const response = await fetch(MANIFEST_URL, { cache: 'no-store' });
+  const response = await fetch(withBase('/api/book-manifest.json'), { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error(`Failed to load book manifest: ${response.statusText}`);
   }
 
-  return response.json() as Promise<BookManifest>;
+  const data = (await response.json()) as BookManifest;
+  return {
+    ...data,
+    chapters: data.chapters.map((chapter) => ({
+      ...chapter,
+      pdfUrl: withBase(chapter.pdfUrl),
+    })),
+  };
 }
 
 export function getSessionLabel(manifest: BookManifest): string {
