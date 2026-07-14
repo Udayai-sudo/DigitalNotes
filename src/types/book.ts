@@ -1,3 +1,5 @@
+export type PageKind = 'session-start' | 'content' | 'session-end';
+
 export interface BookChapter {
   id: string;
   title: string;
@@ -9,6 +11,7 @@ export interface BookChapter {
 
 export interface BookManifest {
   id: string;
+  slug?: string;
   title: string;
   subtitle: string;
   author: string;
@@ -22,12 +25,14 @@ export interface BookManifest {
 }
 
 export interface FlatPage {
+  kind: PageKind;
   globalIndex: number;
   chapterId: string;
   chapterTitle: string;
   chapterOrder: number;
   pageInChapter: number;
   pdfUrl: string;
+  sessionLabel?: string;
 }
 
 export interface ReadingProgress {

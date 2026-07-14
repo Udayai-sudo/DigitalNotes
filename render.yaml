@@ -1,9 +1,72 @@
+# StringStack Digital Book Reader
+# One static site per book branch → one Graphy URL each.
+# After first Blueprint sync, each service gets its own HTTPS URL on Render.
+
 services:
+  # Demo 1 — Graphy link for Day-01
   - type: web
-    name: stringstack-book-reader
+    name: stringstack-demo-1
     runtime: static
+    repo: https://github.com/udaymi8871/TextBook
+    branch: book/01-demo-1
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: 20
+        value: "20"
+
+  # Demo 2 — Graphy link for Day-02
+  - type: web
+    name: stringstack-demo-2
+    runtime: static
+    repo: https://github.com/udaymi8871/TextBook
+    branch: book/02-demo-2
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+
+  # Demo 3 — Graphy link for Day-03
+  - type: web
+    name: stringstack-demo-3
+    runtime: static
+    repo: https://github.com/udaymi8871/TextBook
+    branch: book/03-demo-3
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+
+  # Demo 4 — Graphy link for Day-04
+  - type: web
+    name: stringstack-demo-4
+    runtime: static
+    repo: https://github.com/udaymi8871/TextBook
+    branch: book/04-demo-4
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

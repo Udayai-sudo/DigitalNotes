@@ -1,22 +1,18 @@
 import clsx from 'clsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getSessionLabel } from '../services/bookApi';
 import { themeConfig } from '../config/theme';
 import { useBookmarks } from '../hooks/useBookmarks';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 import { useTheme } from '../hooks/useTheme';
-import { loadRecentlyRead } from '../services/progressStorage';
 import type { BookManifest, FlatPage } from '../types/book';
 import { FlipBookReader, type FlipBookHandle } from './book/FlipBookReader';
 import { PageJumpModal, SearchOverlay } from './reader/SearchOverlay';
 import { ReadingToolbar } from './reader/ReadingToolbar';
-import { Sidebar } from './sidebar/Sidebar';
 
 interface ReadingViewProps {
   manifest: BookManifest;
   pages: FlatPage[];
-  chapterStarts: Map<string, number>;
-  chapterCount: number;
-  readingTimeMinutes: number;
   initialPageIndex: number;
   onBackToCover: () => void;
 }
@@ -24,23 +20,21 @@ interface ReadingViewProps {
 export function ReadingView({
   manifest,
   pages,
-  chapterStarts,
-  readingTimeMinutes,
   initialPageIndex,
   onBackToCover,
 }: ReadingViewProps) {
   const { theme, cycleTheme } = useTheme();
   const colors = themeConfig[theme];
   const flipRef = useRef<FlipBookHandle>(null);
+  const sessionLabel = getSessionLabel(manifest);
 
   const [currentPageIndex, setCurrentPageIndex] = useState(initialPageIndex);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [pageJumpOpen, setPageJumpOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { bookmarks, isBookmarked, toggleBookmark } = useBookmarks(manifest.id, pages);
+  const { isBookmarked, toggleBookmark } = useBookmarks(manifest.id, pages);
   const { percentComplete } = useReadingProgress({
     bookId: manifest.id,
     bookTitle: manifest.title,
@@ -48,8 +42,6 @@ export function ReadingView({
     currentPageIndex,
     enabled: true,
   });
-
-  const recentlyRead = loadRecentlyRead();
 
   useEffect(() => {
     setCurrentPageIndex(initialPageIndex);
@@ -66,10 +58,20 @@ export function ReadingView({
     return () => window.removeEventListener('keydown', handler);
   }, [isFullscreen]);
 
+  const [flipResetKey, setFlipResetKey] = useState(0);
+
   const navigateTo = useCallback((index: number) => {
-    setCurrentPageIndex(index);
-    flipRef.current?.goToPage(index);
-    setSidebarOpen(false);
+    const target = Math.max(0, Math.min(pages.length - 1, index));
+    setCurrentPageIndex(target);
+    flipRef.current?.goToPage(target);
+  }, [pages.length]);
+
+  const handleEndSession = useCallback(() => {
+    setCurrentPageIndex(0);
+    setFlipResetKey((key) => key + 1);
+    requestAnimationFrame(() => {
+      flipRef.current?.goToPage(0);
+    });
   }, []);
 
   const toggleFullscreen = useCallback(async () => {
@@ -88,6 +90,14 @@ export function ReadingView({
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
+  const currentPage = pages[currentPageIndex];
+  const statusLabel =
+    currentPage?.kind === 'session-start'
+      ? sessionLabel
+      : currentPage?.kind === 'session-end'
+        ? sessionLabel
+        : (currentPage?.chapterTitle ?? 'Reading');
+
   return (
     <div className={clsx('flex h-screen flex-col overflow-hidden', colors.bg, colors.text)}>
       <ReadingToolbar
@@ -97,7 +107,6 @@ export function ReadingView({
         currentPage={currentPageIndex}
         totalPages={pages.length}
         zoom={zoom}
-        onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onPrev={() => flipRef.current?.flipPrev()}
         onNext={() => flipRef.current?.flipNext()}
         onToggleBookmark={() => toggleBookmark(currentPageIndex)}
@@ -110,52 +119,35 @@ export function ReadingView({
         onBackToCover={onBackToCover}
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          manifest={manifest}
+      <main
+        className={clsx(
+          'relative flex flex-1 flex-col items-center justify-center overflow-auto p-4 md:p-8',
+          colors.readerBg,
+        )}
+      >
+        <div className="mb-4 w-full max-w-5xl px-2">
+          <div className="flex items-center justify-between text-xs text-stone-500">
+            <span>{statusLabel}</span>
+            <span>{percentComplete}% complete</span>
+          </div>
+        </div>
+
+        <FlipBookReader
+          ref={flipRef}
           pages={pages}
-          chapterStarts={chapterStarts}
-          currentPageIndex={currentPageIndex}
-          bookmarks={bookmarks}
-          recentlyRead={recentlyRead}
-          percentComplete={percentComplete}
-          readingTimeMinutes={readingTimeMinutes}
+          currentIndex={currentPageIndex}
+          onPageChange={setCurrentPageIndex}
+          zoom={zoom}
           theme={theme}
-          onNavigateChapter={navigateTo}
-          onNavigateBookmark={navigateTo}
+          bookTitle={manifest.title}
+          onEndSession={handleEndSession}
+          resetKey={flipResetKey}
         />
 
-        <main
-          className={clsx(
-            'relative flex flex-1 flex-col items-center justify-center overflow-auto p-4 md:p-8',
-            colors.readerBg,
-          )}
-        >
-          <div className="mb-4 w-full max-w-5xl px-2">
-            <div className="flex items-center justify-between text-xs text-stone-500">
-              <span>
-                {pages[currentPageIndex]?.chapterTitle ?? 'Reading'}
-              </span>
-              <span>{percentComplete}% complete</span>
-            </div>
-          </div>
-
-          <FlipBookReader
-            ref={flipRef}
-            pages={pages}
-            currentIndex={currentPageIndex}
-            onPageChange={setCurrentPageIndex}
-            zoom={zoom}
-            theme={theme}
-          />
-
-          <p className="mt-6 text-center text-xs text-stone-400">
-            Use arrow keys or swipe to turn pages · Click corners to flip
-          </p>
-        </main>
-      </div>
+        <p className="mt-6 text-center text-xs text-stone-400">
+          Use arrow keys or swipe to turn pages · Click corners to flip
+        </p>
+      </main>
 
       <PageJumpModal
         open={pageJumpOpen}

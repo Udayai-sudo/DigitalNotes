@@ -3,6 +3,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { preloadPdfPages, renderPdfPageToCanvas } from '../../services/pdfService';
 import type { FlatPage, ThemeMode } from '../../types/book';
 import { themeConfig } from '../../config/theme';
+import { SessionPage } from './SessionPage';
 
 interface PdfPageCanvasProps {
   page: FlatPage;
@@ -53,12 +54,7 @@ export const PdfPageCanvas = memo(function PdfPageCanvas({
   }, [isActive, page.pdfUrl, page.pageInChapter, priority, zoom]);
 
   return (
-    <div
-      className={clsx(
-        'relative flex h-full w-full flex-col overflow-hidden',
-        colors.paper,
-      )}
-    >
+    <div className={clsx('relative flex h-full w-full flex-col overflow-hidden', colors.paper)}>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/[0.03] via-transparent to-black/[0.06]" />
 
       {loading && (
@@ -82,10 +78,6 @@ export const PdfPageCanvas = memo(function PdfPageCanvas({
           )}
         />
       </div>
-
-      <footer className="border-t border-black/5 px-4 py-2 text-center font-serif text-xs text-stone-400">
-        {page.globalIndex + 1}
-      </footer>
     </div>
   );
 });
@@ -97,6 +89,8 @@ interface BookPageProps {
   isActive: boolean;
   side: 'left' | 'right';
   priority?: boolean;
+  bookTitle?: string;
+  onEndSession?: () => void;
 }
 
 export const BookPage = memo(function BookPage({
@@ -106,6 +100,8 @@ export const BookPage = memo(function BookPage({
   isActive,
   side,
   priority,
+  bookTitle,
+  onEndSession,
 }: BookPageProps) {
   const colors = themeConfig[theme];
 
@@ -123,6 +119,20 @@ export const BookPage = memo(function BookPage({
     );
   }
 
+  if (page.kind === 'session-start' || page.kind === 'session-end') {
+    return (
+      <div
+        className={clsx(
+          'h-full w-full overflow-hidden',
+          colors.paperBorder,
+          side === 'left' ? 'rounded-l-sm border-r' : 'rounded-r-sm',
+        )}
+      >
+        <SessionPage page={page} theme={theme} bookTitle={bookTitle} onEndSession={onEndSession} />
+      </div>
+    );
+  }
+
   return (
     <div
       className={clsx(
@@ -136,16 +146,12 @@ export const BookPage = memo(function BookPage({
   );
 });
 
-export function preloadNearbyPages(
-  pages: FlatPage[],
-  centerIndex: number,
-  zoom: number,
-): void {
+export function preloadNearbyPages(pages: FlatPage[], centerIndex: number, zoom: number): void {
   const indices = [centerIndex - 2, centerIndex - 1, centerIndex, centerIndex + 1, centerIndex + 2];
 
   for (const index of indices) {
     const page = pages[index];
-    if (!page) continue;
+    if (!page || page.kind !== 'content') continue;
     preloadPdfPages(page.pdfUrl, [page.pageInChapter], 1.4 * zoom);
   }
 }

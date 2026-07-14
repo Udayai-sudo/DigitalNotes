@@ -22,9 +22,9 @@ function BackCover() {
     >
       <div className="w-full text-center">
         <img
-          src="/favicon-icon.png"
-          alt="StringStack"
-          className="mx-auto h-16 w-16 object-contain"
+          src={brand.logo}
+          alt={brand.name}
+          className="mx-auto h-14 w-auto max-w-[220px] object-contain md:h-16"
         />
         <p
           className="mt-4 text-xs font-semibold uppercase tracking-[0.35em]"

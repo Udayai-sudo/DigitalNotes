@@ -11,7 +11,7 @@ import {
 import HTMLFlipBook from 'react-pageflip';
 import type { FlipBookRef } from 'react-pageflip';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import { useVirtualWindow, VIRTUAL_WINDOW_SIZE } from '../../hooks/useVirtualPages';
+import { useVirtualWindow } from '../../hooks/useVirtualPages';
 import type { FlatPage, ThemeMode } from '../../types/book';
 import { themeConfig } from '../../config/theme';
 import { BookPage, preloadNearbyPages } from './BookPage';
@@ -28,6 +28,9 @@ interface FlipBookReaderProps {
   onPageChange: (index: number) => void;
   zoom: number;
   theme: ThemeMode;
+  bookTitle?: string;
+  onEndSession?: () => void;
+  resetKey?: number;
 }
 
 interface FlipPageSlotProps {
@@ -36,10 +39,12 @@ interface FlipPageSlotProps {
   theme: ThemeMode;
   isActive: boolean;
   slotIndex: number;
+  bookTitle?: string;
+  onEndSession?: () => void;
 }
 
 const FlipPageSlot = forwardRef<HTMLDivElement, FlipPageSlotProps>(function FlipPageSlot(
-  { page, zoom, theme, isActive, slotIndex },
+  { page, zoom, theme, isActive, slotIndex, bookTitle, onEndSession },
   ref,
 ) {
   const colors = themeConfig[theme];
@@ -58,13 +63,18 @@ const FlipPageSlot = forwardRef<HTMLDivElement, FlipPageSlotProps>(function Flip
         isActive={isActive}
         side={side}
         priority={isActive}
+        bookTitle={bookTitle}
+        onEndSession={onEndSession}
       />
     </div>
   );
 });
 
 export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
-  function FlipBookReader({ pages, currentIndex, onPageChange, zoom, theme }, ref) {
+  function FlipBookReader(
+    { pages, currentIndex, onPageChange, zoom, theme, bookTitle, onEndSession, resetKey = 0 },
+    ref,
+  ) {
     const flipRef = useRef<FlipBookRef>(null);
     const isMobile = useIsMobile();
     const colors = themeConfig[theme];
@@ -75,7 +85,7 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
 
     useEffect(() => {
       const update = () => {
-        const maxWidth = Math.min(window.innerWidth - (isMobile ? 32 : 320), 520);
+        const maxWidth = Math.min(window.innerWidth - 32, 520);
         const width = Math.max(280, maxWidth);
         const height = Math.round(width * 1.35);
         setDimensions({ width, height });
@@ -97,11 +107,7 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
         slots.push(pages[i] ?? null);
       }
 
-      while (slots.length < VIRTUAL_WINDOW_SIZE) {
-        slots.push(null);
-      }
-
-      return slots.slice(0, VIRTUAL_WINDOW_SIZE);
+      return slots;
     }, [pages, windowEnd, windowStart]);
 
     const localIndex = currentIndex - windowStart;
@@ -112,14 +118,15 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       const api = flipRef.current?.pageFlip();
       if (api) {
         const local = api.getCurrentPageIndex();
-        if (local < windowPages.length - 1) {
+        const nextLocal = currentIndex + 1 - windowStart;
+        if (local < nextLocal && nextLocal < windowPages.length) {
           api.flipNext();
           return;
         }
       }
 
       onPageChange(Math.min(totalPages - 1, currentIndex + 1));
-    }, [currentIndex, onPageChange, totalPages, windowPages.length]);
+    }, [currentIndex, onPageChange, totalPages, windowPages.length, windowStart]);
 
     const flipPrev = useCallback(() => {
       if (currentIndex <= 0) return;
@@ -143,13 +150,23 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       [onPageChange, totalPages],
     );
 
+    useEffect(() => {
+      const api = flipRef.current?.pageFlip();
+      if (!api || api.getPageCount() === 0) return;
+
+      const targetLocal = currentIndex - windowStart;
+      if (api.getCurrentPageIndex() !== targetLocal) {
+        api.turnToPage(targetLocal);
+      }
+    }, [currentIndex, windowStart]);
+
     useImperativeHandle(ref, () => ({ flipNext, flipPrev, goToPage }), [flipNext, flipPrev, goToPage]);
 
     const handleFlip = useCallback(
       (e: { data: number }) => {
         const newLocal = e.data;
-        const globalIndex = windowStart + newLocal;
-        if (globalIndex !== currentIndex && globalIndex < totalPages) {
+        const globalIndex = Math.max(0, Math.min(totalPages - 1, windowStart + newLocal));
+        if (globalIndex !== currentIndex) {
           onPageChange(globalIndex);
         }
       },
@@ -183,6 +200,8 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
             isActive
             side="right"
             priority
+            bookTitle={bookTitle}
+            onEndSession={onEndSession}
           />
         </div>
       );
@@ -194,7 +213,7 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
 
         <HTMLFlipBook
           ref={flipRef}
-          key={`${windowStart}-${zoom}`}
+          key={`${windowStart}-${zoom}-${resetKey}`}
           width={dimensions.width}
           height={dimensions.height}
           size="fixed"
@@ -219,12 +238,14 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
         >
           {windowPages.map((page, index) => (
             <FlipPageSlot
-              key={`${windowStart + index}-${page?.globalIndex ?? 'blank'}`}
+              key={`${windowStart + index}-${page?.globalIndex ?? 'blank'}-${page?.kind ?? 'blank'}`}
               page={page}
               zoom={zoom}
               theme={theme}
               isActive={Math.abs(currentIndex - (windowStart + index)) <= 1}
               slotIndex={windowStart + index}
+              bookTitle={bookTitle}
+              onEndSession={onEndSession}
             />
           ))}
         </HTMLFlipBook>

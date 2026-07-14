@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "sync-chapters": "node scripts/buildManifest.mjs",
+    "new-book": "node scripts/create-book-branch.mjs",
+    "list-books": "node -e \"console.log(JSON.parse(require('fs').readFileSync('books/registry.json','utf8')).books.map(b=>b.branch+' -> '+b.title).join('\\n'))\"",
     "dev": "npm run sync-chapters && vite",
     "build": "npm run sync-chapters && tsc && vite build",
     "preview": "vite preview"

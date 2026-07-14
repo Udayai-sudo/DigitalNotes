@@ -12,6 +12,13 @@ export async function fetchBookManifest(): Promise<BookManifest> {
   return response.json() as Promise<BookManifest>;
 }
 
+export function getSessionLabel(manifest: BookManifest): string {
+  const slug = manifest.slug ?? '';
+  const match = slug.match(/^(\d+)/);
+  const day = match ? match[1].padStart(2, '0') : '01';
+  return `Day-${day} Session`;
+}
+
 export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
   const pages: FlatPage[] = [];
   let globalIndex = 0;
@@ -23,6 +30,7 @@ export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
 
     for (let pageInChapter = 1; pageInChapter <= pageCount; pageInChapter += 1) {
       pages.push({
+        kind: 'content',
         globalIndex,
         chapterId: chapter.id,
         chapterTitle: chapter.title,
@@ -37,16 +45,58 @@ export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
   return pages;
 }
 
+export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatPage[]): FlatPage[] {
+  if (contentPages.length === 0) return contentPages;
+
+  const sessionLabel = getSessionLabel(manifest);
+  const chapterId = contentPages[0].chapterId;
+
+  const startPage: FlatPage = {
+    kind: 'session-start',
+    globalIndex: 0,
+    sessionLabel,
+    chapterId,
+    chapterTitle: sessionLabel,
+    chapterOrder: 0,
+    pageInChapter: 0,
+    pdfUrl: '',
+  };
+
+  const wrappedContent = contentPages.map((page, index) => ({
+    ...page,
+    kind: 'content' as const,
+    globalIndex: index + 1,
+  }));
+
+  const endPage: FlatPage = {
+    kind: 'session-end',
+    globalIndex: wrappedContent.length + 1,
+    sessionLabel,
+    chapterId,
+    chapterTitle: 'End Session',
+    chapterOrder: 0,
+    pageInChapter: 0,
+    pdfUrl: '',
+  };
+
+  return [startPage, ...wrappedContent, endPage];
+}
+
 export function getChapterStartPages(pages: FlatPage[]): Map<string, number> {
   const map = new Map<string, number>();
 
   for (const page of pages) {
+    if (page.kind !== 'content') continue;
     if (!map.has(page.chapterId)) {
       map.set(page.chapterId, page.globalIndex);
     }
   }
 
   return map;
+}
+
+export function countContentPages(pages: FlatPage[]): number {
+  return pages.filter((page) => page.kind === 'content').length;
 }
 
 export function estimateReadingTimeMinutes(totalPages: number, pagesPerMinute = 2): number {

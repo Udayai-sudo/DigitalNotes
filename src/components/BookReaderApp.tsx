@@ -13,9 +13,8 @@ export function BookReaderApp() {
   const {
     manifest,
     pages,
-    chapterStarts,
     chapterCount,
-    totalPages,
+    contentPageCount,
     readingTimeMinutes,
     loading,
     error,
@@ -73,9 +72,6 @@ export function BookReaderApp() {
           <ReadingView
             manifest={manifest}
             pages={pages}
-            chapterStarts={chapterStarts}
-            chapterCount={chapterCount}
-            readingTimeMinutes={readingTimeMinutes}
             initialPageIndex={startPageIndex}
             onBackToCover={() => setView('cover')}
           />
@@ -84,7 +80,7 @@ export function BookReaderApp() {
         <BookCover
           manifest={manifest}
           chapterCount={chapterCount}
-          totalPages={totalPages}
+          totalPages={contentPageCount}
           readingTimeMinutes={readingTimeMinutes}
           savedPageIndex={savedProgress.getSavedPage()}
           onStartReading={handleStartReading}

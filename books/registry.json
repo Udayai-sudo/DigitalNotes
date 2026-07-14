@@ -1,0 +1,12 @@
+{
+  "books": [
+    {
+      "slug": "02-demo-2",
+      "branch": "book/02-demo-2",
+      "title": "Demo 2",
+      "pdf": "02-demo-2.pdf",
+      "sessionLabel": "Day-02 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/02-demo-2"
+    }
+  ]
+}

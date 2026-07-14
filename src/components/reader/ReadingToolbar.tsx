@@ -1,10 +1,10 @@
 import clsx from 'clsx';
 import {
+  ArrowLeft,
   Bookmark,
   ChevronLeft,
   ChevronRight,
   Maximize,
-  Menu,
   Minimize,
   Moon,
   Search,
@@ -12,7 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { themeConfig } from '../../config/theme';
+import { brandColors, themeConfig } from '../../config/theme';
 import type { ThemeMode } from '../../types/book';
 import { Button } from '../ui/Button';
 
@@ -23,7 +23,6 @@ interface ReadingToolbarProps {
   currentPage: number;
   totalPages: number;
   zoom: number;
-  onToggleSidebar: () => void;
   onPrev: () => void;
   onNext: () => void;
   onToggleBookmark: () => void;
@@ -43,7 +42,6 @@ export function ReadingToolbar({
   currentPage,
   totalPages,
   zoom,
-  onToggleSidebar,
   onPrev,
   onNext,
   onToggleBookmark,
@@ -64,14 +62,16 @@ export function ReadingToolbar({
         colors.toolbar,
       )}
     >
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="sm" onClick={onToggleSidebar} aria-label="Toggle sidebar">
-          <Menu size={18} />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onBackToCover} className="hidden sm:inline-flex">
-          Cover
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onBackToCover}
+        className="font-medium"
+        style={{ color: brandColors.gold }}
+      >
+        <ArrowLeft size={18} />
+        Back to Cover
+      </Button>
 
       <div className="mx-auto flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={onPrev} disabled={currentPage <= 0} aria-label="Previous page">

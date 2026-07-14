@@ -59,4 +59,6 @@ export const brand = {
   name: 'StringStack.ai',
   tagline: 'Digital Learning Platform',
   subtitle: 'Secure · Structured · Smart Learning',
+  logo: '/stringstack-logo.png',
+  logoIcon: '/favicon-icon.png',
 };

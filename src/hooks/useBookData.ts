@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  countContentPages,
   estimateReadingTimeMinutes,
   fetchBookManifest,
   flattenChaptersToPages,
   getChapterStartPages,
+  wrapPagesWithSession,
 } from '../services/bookApi';
 import { getPdfPageCount } from '../services/pdfService';
 import type { BookManifest, FlatPage } from '../types/book';
@@ -15,6 +17,7 @@ interface UseBookDataResult {
   pages: FlatPage[];
   chapterStarts: Map<string, number>;
   totalPages: number;
+  contentPageCount: number;
   chapterCount: number;
   readingTimeMinutes: number;
   loading: boolean;
@@ -62,7 +65,8 @@ export function useBookData(): UseBookDataResult {
       previousChapterCount.current = nextCount;
 
       setManifest(enriched);
-      setPages(flattenChaptersToPages(enriched));
+      const contentPages = flattenChaptersToPages(enriched);
+      setPages(wrapPagesWithSession(enriched, contentPages));
       hasLoaded.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load book');
@@ -100,14 +104,16 @@ export function useBookData(): UseBookDataResult {
 
   const chapterStarts = useMemo(() => getChapterStartPages(pages), [pages]);
   const totalPages = pages.length;
+  const contentPageCount = useMemo(() => countContentPages(pages), [pages]);
   const chapterCount = manifest?.chapters.length ?? 0;
-  const readingTimeMinutes = estimateReadingTimeMinutes(totalPages);
+  const readingTimeMinutes = estimateReadingTimeMinutes(contentPageCount);
 
   return {
     manifest,
     pages,
     chapterStarts,
     totalPages,
+    contentPageCount,
     chapterCount,
     readingTimeMinutes,
     loading,
