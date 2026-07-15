@@ -7,6 +7,16 @@
       "pdf": "02-demo-2.pdf",
       "sessionLabel": "Day-02 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/02-demo-2"
+    },
+    {
+      "slug": "java-fundamentals",
+      "branch": "book/java-fundamentals",
+      "title": "Java Fundamentals",
+      "source": "java-fundamentals.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-fundamentals",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-fundamentals/",
+      "docx": "java-fundamentals.docx"
     }
   ]
 }
