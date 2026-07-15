@@ -19,6 +19,7 @@ function parseArgs(argv) {
     if (token === '--slug') args.slug = argv[++i];
     else if (token === '--title') args.title = argv[++i];
     else if (token === '--pdf') args.pdf = argv[++i];
+    else if (token === '--docx') args.docx = argv[++i];
     else if (token === '--push') args.push = true;
     else if (token === '--no-commit') args.noCommit = true;
   }
@@ -37,35 +38,34 @@ function writeRegistry(registry) {
   fs.writeFileSync(REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`, 'utf8');
 }
 
-function clearChapterPdfs() {
+function clearChapterSources() {
   for (const file of fs.readdirSync(paths.CHAPTERS_DIR)) {
-    if (file.toLowerCase().endsWith('.pdf')) {
+    const lower = file.toLowerCase();
+    if (lower.endsWith('.pdf') || lower.endsWith('.docx') || lower.endsWith('.content.json')) {
       fs.unlinkSync(path.join(paths.CHAPTERS_DIR, file));
     }
   }
 }
 
-function resolvePdfPath(pdfArg) {
+function resolveSourcePath(sourceArg, extension) {
+  const withExt = sourceArg.toLowerCase().endsWith(extension) ? sourceArg : `${sourceArg}${extension}`;
   const candidates = [
-    path.resolve(ROOT, pdfArg),
-    path.resolve(ROOT, `${pdfArg}.pdf`),
-    path.join(paths.CHAPTERS_DIR, pdfArg),
-    path.join(paths.CHAPTERS_DIR, `${pdfArg}.pdf`),
+    path.resolve(ROOT, sourceArg),
+    path.resolve(ROOT, withExt),
+    path.join(paths.CHAPTERS_DIR, sourceArg),
+    path.join(paths.CHAPTERS_DIR, withExt),
   ];
 
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) return candidate;
   }
 
-  throw new Error(`PDF not found: ${pdfArg}`);
+  throw new Error(`Source file not found: ${sourceArg}`);
 }
 
-function humanizePdfTitle(pdfPath) {
-  const base = path.basename(pdfPath, path.extname(pdfPath));
-  return base
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+function humanizeTitle(filePath) {
+  const base = path.basename(filePath, path.extname(filePath)).replace(/\.content$/i, '');
+  return base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function dayFromSlug(slug) {
@@ -73,13 +73,14 @@ function dayFromSlug(slug) {
   return match ? match[1].padStart(2, '0') : '01';
 }
 
-function setupBook({ slug, title, pdfPath }) {
+function setupBook({ slug, title, sourcePath, mode }) {
   const day = dayFromSlug(slug);
-  const chapterFilename = `${slug}.pdf`;
-  const bookTitle = title || humanizePdfTitle(pdfPath);
+  const bookTitle = title || humanizeTitle(sourcePath);
+  const sourceExt = mode === 'docx' ? '.docx' : '.pdf';
+  const chapterFilename = `${slug}${sourceExt}`;
 
-  clearChapterPdfs();
-  fs.copyFileSync(pdfPath, path.join(paths.CHAPTERS_DIR, chapterFilename));
+  clearChapterSources();
+  fs.copyFileSync(sourcePath, path.join(paths.CHAPTERS_DIR, chapterFilename));
 
   const config = {
     id: `stringstack-${slug}`,
@@ -98,13 +99,11 @@ function setupBook({ slug, title, pdfPath }) {
   fs.writeFileSync(paths.CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
   const manifest = writeManifest();
 
-  // Keep configured book title (do not let chapter filename overwrite it).
   manifest.title = bookTitle;
-  fs.writeFileSync(paths.MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   if (manifest.chapters[0]) {
     manifest.chapters[0].title = bookTitle;
-    fs.writeFileSync(paths.MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   }
+  fs.writeFileSync(paths.MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
   const registry = readRegistry();
   const branch = `book/${slug}`;
@@ -113,16 +112,16 @@ function setupBook({ slug, title, pdfPath }) {
     slug,
     branch,
     title: bookTitle,
-    pdf: chapterFilename,
+    source: chapterFilename,
     sessionLabel: `Day-${day} Session`,
     githubUrl: `https://github.com/udaymi8871/TextBook/tree/${branch}`,
+    pagesUrl: `https://udaymi8871.github.io/TextBook/${slug}/`,
   };
+  if (mode === 'pdf') entry.pdf = chapterFilename;
+  if (mode === 'docx') entry.docx = chapterFilename;
 
-  if (existing) {
-    Object.assign(existing, entry);
-  } else {
-    registry.books.push(entry);
-  }
+  if (existing) Object.assign(existing, entry);
+  else registry.books.push(entry);
 
   registry.books.sort((a, b) => a.slug.localeCompare(b.slug));
   writeRegistry(registry);
@@ -132,15 +131,20 @@ function setupBook({ slug, title, pdfPath }) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.slug || !args.pdf) {
+  if (!args.slug || (!args.pdf && !args.docx)) {
     console.error(
-      'Usage: node scripts/create-book-branch.mjs --slug 04-demo-4 --pdf "Java Introduction -1.pdf" [--title "Optional Override"] [--push]',
+      'Usage: node scripts/create-book-branch.mjs --slug java-fundamentals --docx "Java Fundamentals.docx" [--title "Java Fundamentals"] [--push]',
     );
     process.exit(1);
   }
 
-  const pdfPath = resolvePdfPath(args.pdf);
-  const title = args.title || humanizePdfTitle(pdfPath);
+  const mode = args.docx ? 'docx' : 'pdf';
+  const sourcePath = resolveSourcePath(args.docx || args.pdf, mode === 'docx' ? '.docx' : '.pdf');
+  // Keep original on disk if create-book clears chapters — copy to temp first
+  const tempCopy = path.join(ROOT, `.tmp-book-source${path.extname(sourcePath)}`);
+  fs.copyFileSync(sourcePath, tempCopy);
+
+  const title = args.title || humanizeTitle(sourcePath);
   const branch = `book/${args.slug}`;
 
   run('git checkout main');
@@ -153,11 +157,16 @@ function main() {
   const { manifest, entry, bookTitle } = setupBook({
     slug: args.slug,
     title,
-    pdfPath,
+    sourcePath: tempCopy,
+    mode,
   });
 
+  fs.unlinkSync(tempCopy);
+
   if (!args.noCommit) {
-    run('git add content/book.config.json public/chapters public/api/book-manifest.json books/registry.json');
+    run(
+      'git add content/book.config.json public/chapters public/api/book-manifest.json books/registry.json',
+    );
     run(`git commit -m "Add book branch ${args.slug}: ${bookTitle}"`);
   }
 
@@ -165,8 +174,9 @@ function main() {
   console.log(`Book branch ready: ${branch}`);
   console.log(`  Title: ${manifest.title}`);
   console.log(`  Session: ${entry.sessionLabel}`);
-  console.log(`  PDF: public/chapters/${entry.pdf}`);
+  console.log(`  Source: public/chapters/${entry.source}`);
   console.log(`  GitHub: ${entry.githubUrl}`);
+  console.log(`  Live:   ${entry.pagesUrl}`);
   console.log('');
 
   if (args.push) {

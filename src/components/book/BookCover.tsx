@@ -49,7 +49,12 @@ export function BookCover({
   }, [initialShowBack]);
 
   useEffect(() => {
-    const syncSize = () => setPageSize(getBookPageSize());
+    const syncSize = () => {
+      const next = getBookPageSize();
+      setPageSize((prev) =>
+        prev.width === next.width && prev.height === next.height ? prev : next,
+      );
+    };
     syncSize();
     window.addEventListener('resize', syncSize);
     return () => window.removeEventListener('resize', syncSize);

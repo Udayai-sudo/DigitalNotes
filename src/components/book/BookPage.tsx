@@ -3,6 +3,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { preloadPdfPages, renderPdfPageToCanvas } from '../../services/pdfService';
 import type { FlatPage, ThemeMode } from '../../types/book';
 import { themeConfig } from '../../config/theme';
+import { QaContentPage } from './QaContentPage';
 import { SessionPage } from './SessionPage';
 
 interface PdfPageCanvasProps {
@@ -133,6 +134,20 @@ export const BookPage = memo(function BookPage({
     );
   }
 
+  if (page.contentMode === 'qa') {
+    return (
+      <div
+        className={clsx(
+          'h-full w-full overflow-hidden',
+          colors.paperBorder,
+          side === 'left' ? 'rounded-l-sm border-r' : 'rounded-r-sm',
+        )}
+      >
+        <QaContentPage page={page} theme={theme} bookTitle={bookTitle} />
+      </div>
+    );
+  }
+
   return (
     <div
       className={clsx(
@@ -152,6 +167,7 @@ export function preloadNearbyPages(pages: FlatPage[], centerIndex: number, zoom:
   for (const index of indices) {
     const page = pages[index];
     if (!page || page.kind !== 'content') continue;
+    if (page.contentMode === 'qa' || !page.pdfUrl) continue;
     preloadPdfPages(page.pdfUrl, [page.pageInChapter], 1.4 * zoom);
   }
 }

@@ -1,12 +1,30 @@
 export type PageKind = 'session-start' | 'content' | 'session-end';
+export type ChapterContentMode = 'pdf' | 'qa';
+
+export interface QAItem {
+  question: string;
+  answer: string;
+}
+
+export interface ChapterContentFile {
+  title?: string;
+  itemsPerPage?: number;
+  source?: string;
+  items: QAItem[];
+}
 
 export interface BookChapter {
   id: string;
   title: string;
   order: number;
   pdfUrl: string;
+  contentUrl?: string;
+  contentMode?: ChapterContentMode;
   pageCount?: number;
+  qaItems?: QAItem[];
+  itemsPerPage?: number;
   uploadedAt: string;
+  filename?: string;
 }
 
 export interface BookManifest {
@@ -33,6 +51,9 @@ export interface FlatPage {
   pageInChapter: number;
   pdfUrl: string;
   sessionLabel?: string;
+  contentMode?: ChapterContentMode;
+  qaItems?: QAItem[];
+  contentPageTotal?: number;
 }
 
 export interface ReadingProgress {

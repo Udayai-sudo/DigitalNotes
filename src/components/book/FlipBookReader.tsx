@@ -98,7 +98,12 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       : virtual.windowEnd;
 
     useEffect(() => {
-      const update = () => setDimensions(getBookPageSize());
+      const update = () => {
+        const next = getBookPageSize();
+        setDimensions((prev) =>
+          prev.width === next.width && prev.height === next.height ? prev : next,
+        );
+      };
 
       update();
       window.addEventListener('resize', update);

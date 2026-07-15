@@ -12,15 +12,18 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-15T12:06:45.005Z",
+  "updatedAt": "2026-07-15T19:04:56.219Z",
   "chapters": [
     {
       "id": "02-demo-2",
       "title": "Demo 2",
       "order": 1,
-      "pdfUrl": "/chapters/02-demo-2.pdf",
-      "uploadedAt": "2026-07-14T15:01:38.431Z",
-      "filename": "02-demo-2.pdf"
+      "uploadedAt": "2026-07-15T18:49:38.779Z",
+      "filename": "02-demo-2.content.json",
+      "contentUrl": "/chapters/02-demo-2.content.json",
+      "contentMode": "qa",
+      "pageCount": 6,
+      "pdfUrl": "/chapters/02-demo-2.pdf"
     }
   ]
 }

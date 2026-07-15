@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   countContentPages,
+  enrichChapterWithContent,
   estimateReadingTimeMinutes,
   fetchBookManifest,
   flattenChaptersToPages,
@@ -27,6 +28,28 @@ interface UseBookDataResult {
   refetch: () => void;
 }
 
+function bookFingerprint(manifest: BookManifest, pages: FlatPage[]): string {
+  return JSON.stringify({
+    id: manifest.id,
+    chapters: manifest.chapters.map((chapter) => ({
+      id: chapter.id,
+      contentMode: chapter.contentMode,
+      contentUrl: chapter.contentUrl,
+      pdfUrl: chapter.pdfUrl,
+      pageCount: chapter.pageCount,
+      itemsPerPage: chapter.itemsPerPage,
+      qa: chapter.qaItems?.map((item) => [item.question, item.answer]),
+    })),
+    pages: pages.map((page) => ({
+      kind: page.kind,
+      pageInChapter: page.pageInChapter,
+      contentMode: page.contentMode,
+      qa: page.qaItems?.map((item) => [item.question, item.answer]),
+      pdfUrl: page.pdfUrl,
+    })),
+  });
+}
+
 export function useBookData(): UseBookDataResult {
   const [manifest, setManifest] = useState<BookManifest | null>(null);
   const [pages, setPages] = useState<FlatPage[]>([]);
@@ -35,8 +58,13 @@ export function useBookData(): UseBookDataResult {
   const [newChaptersAdded, setNewChaptersAdded] = useState(0);
   const hasLoaded = useRef(false);
   const previousChapterCount = useRef(0);
+  const fingerprintRef = useRef('');
+  const loadInFlight = useRef(false);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
+    if (loadInFlight.current) return;
+    loadInFlight.current = true;
+
     if (!options?.silent) {
       setLoading(!hasLoaded.current);
     }
@@ -46,9 +74,18 @@ export function useBookData(): UseBookDataResult {
       const data = await fetchBookManifest();
       const chaptersWithCounts = await Promise.all(
         data.chapters.map(async (chapter) => {
-          if (chapter.pageCount && chapter.pageCount > 0) return chapter;
+          if (chapter.contentMode === 'qa' && chapter.contentUrl) {
+            return enrichChapterWithContent(chapter);
+          }
+
+          if (chapter.pageCount && chapter.pageCount > 0) {
+            return { ...chapter, contentMode: chapter.contentMode ?? ('pdf' as const) };
+          }
+          if (!chapter.pdfUrl) {
+            return { ...chapter, pageCount: chapter.pageCount ?? 1, contentMode: 'pdf' as const };
+          }
           const count = await getPdfPageCount(chapter.pdfUrl);
-          return { ...chapter, pageCount: count };
+          return { ...chapter, pageCount: count, contentMode: 'pdf' as const };
         }),
       );
 
@@ -58,19 +95,29 @@ export function useBookData(): UseBookDataResult {
         totalPages: chaptersWithCounts.reduce((sum, ch) => sum + (ch.pageCount ?? 0), 0),
       };
 
+      const contentPages = flattenChaptersToPages(enriched);
+      const nextPages = wrapPagesWithSession(enriched, contentPages);
+      const nextFingerprint = bookFingerprint(enriched, nextPages);
+
+      /** Avoid remounting the flipbook when polling finds no real change. */
+      if (fingerprintRef.current === nextFingerprint) {
+        return;
+      }
+
       const nextCount = enriched.chapters.length;
       if (hasLoaded.current && nextCount > previousChapterCount.current) {
         setNewChaptersAdded(nextCount - previousChapterCount.current);
       }
       previousChapterCount.current = nextCount;
+      fingerprintRef.current = nextFingerprint;
 
       setManifest(enriched);
-      const contentPages = flattenChaptersToPages(enriched);
-      setPages(wrapPagesWithSession(enriched, contentPages));
+      setPages(nextPages);
       hasLoaded.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load book');
     } finally {
+      loadInFlight.current = false;
       setLoading(false);
     }
   }, []);

@@ -37,21 +37,28 @@ export function bookChaptersPlugin(): Plugin {
 
       server.watcher.add(paths.CHAPTERS_DIR);
       server.watcher.on('add', (file) => {
-        if (!file.toLowerCase().endsWith('.pdf')) return;
+        const lower = file.toLowerCase();
+        if (!lower.endsWith('.pdf') && !lower.endsWith('.docx') && !lower.endsWith('.content.json')) {
+          return;
+        }
         writeManifest();
         notifyChaptersUpdated(server);
-        server.config.logger.info(`New chapter added: ${file}`, { timestamp: true });
+        server.config.logger.info(`Chapter source added: ${file}`, { timestamp: true });
       });
       server.watcher.on('change', (file) => {
-        if (!file.toLowerCase().endsWith('.pdf')) return;
+        const lower = file.toLowerCase();
+        if (!lower.endsWith('.pdf') && !lower.endsWith('.docx')) return;
         writeManifest();
         notifyChaptersUpdated(server);
       });
       server.watcher.on('unlink', (file) => {
-        if (!file.toLowerCase().endsWith('.pdf')) return;
+        const lower = file.toLowerCase();
+        if (!lower.endsWith('.pdf') && !lower.endsWith('.docx') && !lower.endsWith('.content.json')) {
+          return;
+        }
         writeManifest();
         notifyChaptersUpdated(server);
-        server.config.logger.info(`Chapter removed: ${file}`, { timestamp: true });
+        server.config.logger.info(`Chapter source removed: ${file}`, { timestamp: true });
       });
     },
     buildStart() {

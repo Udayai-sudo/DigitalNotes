@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { convertDocxChapters } from './docxToContent.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const CHAPTERS_DIR = path.join(ROOT, 'public', 'chapters');
 const CONFIG_PATH = path.join(ROOT, 'content', 'book.config.json');
 const MANIFEST_PATH = path.join(ROOT, 'public', 'api', 'book-manifest.json');
+const QA_PER_PAGE = 2;
 
 function humanize(value) {
   return value
@@ -19,13 +21,16 @@ function humanize(value) {
 function slugify(value) {
   return value
     .toLowerCase()
-    .replace(/\.pdf$/i, '')
+    .replace(/\.(pdf|docx|content\.json)$/i, '')
+    .replace(/\.content$/i, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 }
 
 function parseChapterFilename(filename) {
-  const base = filename.replace(/\.pdf$/i, '');
+  const base = filename
+    .replace(/\.content\.json$/i, '')
+    .replace(/\.(pdf|docx)$/i, '');
 
   const dated = base.match(/^(\d{4}-\d{2}-\d{2})[-_.\s]+(.+)$/i);
   if (dated) {
@@ -98,48 +103,91 @@ function sortChapterFiles(files, sortMode) {
   });
 }
 
-function scanChapterPdfs(sortMode) {
+function scanChapterSources(sortMode) {
   if (!fs.existsSync(CHAPTERS_DIR)) {
     fs.mkdirSync(CHAPTERS_DIR, { recursive: true });
     return [];
   }
 
-  const files = fs
-    .readdirSync(CHAPTERS_DIR)
-    .filter((file) => file.toLowerCase().endsWith('.pdf'))
-    .map((filename) => {
-      const filePath = path.join(CHAPTERS_DIR, filename);
-      const stats = fs.statSync(filePath);
-      const parsed = parseChapterFilename(filename);
+  const byBase = new Map();
 
-      return {
-        filename,
-        filePath,
-        uploadedAt: stats.mtime.toISOString(),
-        addedAtMs: getFileAddedTime(stats),
-        ...parsed,
-      };
-    });
+  for (const filename of fs.readdirSync(CHAPTERS_DIR)) {
+    const lower = filename.toLowerCase();
+    const isPdf = lower.endsWith('.pdf');
+    const isContent = lower.endsWith('.content.json');
+    if (!isPdf && !isContent) continue;
 
+    const base = isContent
+      ? filename.replace(/\.content\.json$/i, '')
+      : filename.replace(/\.pdf$/i, '');
+    const filePath = path.join(CHAPTERS_DIR, filename);
+    const stats = fs.statSync(filePath);
+    const parsed = parseChapterFilename(filename);
+    const existing = byBase.get(base) ?? {
+      base,
+      ...parsed,
+      addedAtMs: getFileAddedTime(stats),
+      uploadedAt: stats.mtime.toISOString(),
+    };
+
+    existing.addedAtMs = Math.min(existing.addedAtMs, getFileAddedTime(stats));
+    if (stats.mtime > new Date(existing.uploadedAt)) {
+      existing.uploadedAt = stats.mtime.toISOString();
+    }
+
+    if (isContent) {
+      existing.contentFilename = filename;
+      try {
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        const items = Array.isArray(data.items) ? data.items : [];
+        const perPage = Number(data.itemsPerPage) > 0 ? Number(data.itemsPerPage) : QA_PER_PAGE;
+        existing.pageCount = Math.max(1, Math.ceil(items.length / perPage));
+        if (typeof data.title === 'string' && data.title.trim()) {
+          existing.title = data.title.trim();
+        }
+      } catch {
+        existing.pageCount = 1;
+      }
+    } else {
+      existing.pdfFilename = filename;
+    }
+
+    byBase.set(base, existing);
+  }
+
+  const files = [...byBase.values()].filter((file) => file.contentFilename || file.pdfFilename);
   return sortChapterFiles(files, sortMode);
 }
 
 export function buildManifest() {
   const config = readBookConfig();
-  const pdfFiles = scanChapterPdfs(config.chapterSortMode);
+  const sources = scanChapterSources(config.chapterSortMode);
 
-  const chapters = pdfFiles.map((file, index) => {
+  const chapters = sources.map((file, index) => {
     const linearOrder = index + 1;
     const title = file.title || `Chapter ${linearOrder}`;
-
-    return {
-      id: slugify(file.filename) || `chapter-${linearOrder}`,
+    const idSource = file.contentFilename || file.pdfFilename || file.base;
+    const chapter = {
+      id: slugify(idSource) || `chapter-${linearOrder}`,
       title,
       order: linearOrder,
-      pdfUrl: `/chapters/${encodeURIComponent(file.filename)}`,
       uploadedAt: file.uploadedAt,
-      filename: file.filename,
+      filename: file.contentFilename || file.pdfFilename,
     };
+
+    if (file.contentFilename) {
+      chapter.contentUrl = `/chapters/${encodeURIComponent(file.contentFilename)}`;
+      chapter.contentMode = 'qa';
+      chapter.pageCount = file.pageCount ?? 1;
+      chapter.pdfUrl = file.pdfFilename
+        ? `/chapters/${encodeURIComponent(file.pdfFilename)}`
+        : '';
+    } else {
+      chapter.pdfUrl = `/chapters/${encodeURIComponent(file.pdfFilename)}`;
+      chapter.contentMode = 'pdf';
+    }
+
+    return chapter;
   });
 
   return {
@@ -156,6 +204,7 @@ export function buildManifest() {
 }
 
 export function writeManifest() {
+  convertDocxChapters();
   const manifest = buildManifest();
   fs.mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
   fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
