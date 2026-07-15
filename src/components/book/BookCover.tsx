@@ -1,9 +1,16 @@
-import { motion } from 'framer-motion';
-import { BookOpen, Clock, Layers, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { BookOpen, Clock, Layers, MapPin, Phone } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  bookEase,
+  bookMotionFlags,
+  getBookPageSize,
+  getBookSlideDistance,
+} from '../../config/bookMotion';
 import { brand, brandColors } from '../../config/theme';
 import type { BookManifest } from '../../types/book';
 import { Button } from '../ui/Button';
+import { BookBackCover } from './BookBackCover';
 
 interface BookCoverProps {
   manifest: BookManifest;
@@ -11,37 +18,11 @@ interface BookCoverProps {
   totalPages: number;
   readingTimeMinutes: number;
   savedPageIndex: number;
-  onStartReading: (fromSaved?: boolean) => void;
-}
-
-function BackCover() {
-  return (
-    <div
-      className="flex h-full flex-col items-center justify-between p-8 md:p-10"
-      style={{ background: brandColors.card }}
-    >
-      <div className="w-full text-center">
-        <img
-          src={brand.logo}
-          alt={brand.name}
-          className="mx-auto h-14 w-auto max-w-[220px] object-contain md:h-16"
-        />
-        <p
-          className="mt-4 text-xs font-semibold uppercase tracking-[0.35em]"
-          style={{ color: brandColors.gold }}
-        >
-          Digital Learning
-        </p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">{brand.name}</h2>
-        <div className="mx-auto mt-4 h-px w-16" style={{ background: brandColors.gold }} />
-        <p className="mt-4 text-sm leading-relaxed text-zinc-400">{brand.tagline}</p>
-      </div>
-
-      <p className="text-center text-xs text-zinc-600">
-        © {new Date().getFullYear()} StringStack.ai
-      </p>
-    </div>
-  );
+  isOpening?: boolean;
+  /** After End Session, open covering the back face first. */
+  initialShowBack?: boolean;
+  onRequestOpen: (fromSaved?: boolean) => void;
+  onOpenComplete?: () => void;
 }
 
 export function BookCover({
@@ -49,62 +30,142 @@ export function BookCover({
   chapterCount,
   totalPages,
   readingTimeMinutes,
-  savedPageIndex,
-  onStartReading,
+  savedPageIndex: _savedPageIndex,
+  isOpening = false,
+  initialShowBack = false,
+  onRequestOpen,
+  onOpenComplete,
 }: BookCoverProps) {
-  const [showBack, setShowBack] = useState(false);
-  const hasProgress = savedPageIndex > 0;
+  const [showBack, setShowBack] = useState(initialShowBack);
+  const [pageSize, setPageSize] = useState(() => getBookPageSize());
+  const prefersReducedMotion = useReducedMotion();
   const hasContent = chapterCount > 0 && totalPages > 0;
+  const slideDistance = getBookSlideDistance();
+  const polish = bookMotionFlags.USE_MOTION_POLISH;
+  const hingeOrigin = isOpening ? 'left center' : 'center center';
+
+  useEffect(() => {
+    setShowBack(initialShowBack);
+  }, [initialShowBack]);
+
+  useEffect(() => {
+    const syncSize = () => setPageSize(getBookPageSize());
+    syncSize();
+    window.addEventListener('resize', syncSize);
+    return () => window.removeEventListener('resize', syncSize);
+  }, []);
+
+  const beginOpen = () => {
+    if (isOpening) return;
+    if (prefersReducedMotion) {
+      onRequestOpen(false);
+      onOpenComplete?.();
+      return;
+    }
+    onRequestOpen(false);
+  };
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center p-4 md:p-8"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden p-4 md:p-8"
       style={{
         background: `linear-gradient(135deg, ${brandColors.bgGradientFrom} 0%, ${brandColors.bgGradientTo} 50%, ${brandColors.bg} 100%)`,
       }}
     >
+      {polish && (
+        <motion.div
+          className="book-stage-vignette"
+          initial={false}
+          animate={{ opacity: isOpening ? 1 : 0 }}
+          transition={{ duration: 0.55 }}
+        />
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, ease: 'easeOut' }}
-        className="relative w-full max-w-lg"
+        className="relative z-10 flex w-full max-w-5xl flex-col items-center"
       >
         <div
           className="pointer-events-none absolute -inset-8 rounded-[2rem] opacity-30 blur-3xl"
           style={{ background: brandColors.gold }}
         />
 
-        <div className="relative" style={{ perspective: '1200px' }}>
+        <div className="relative flex justify-center" style={{ perspective: '1400px' }}>
           <motion.div
-            className="relative mx-auto"
-            animate={{ rotateY: showBack ? 180 : 0 }}
-            transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-            style={{ transformStyle: 'preserve-3d', width: 320 }}
+            className="relative"
+            style={{
+              transformStyle: 'preserve-3d',
+              width: pageSize.width,
+              height: pageSize.height,
+              transformOrigin: hingeOrigin,
+            }}
+            animate={
+              isOpening
+                ? {
+                    x: [0, slideDistance * 0.85, slideDistance],
+                    rotateY: [showBack ? 180 : 0, showBack ? 12 : -8, -82],
+                    scale: [1, 1.03, 1.05],
+                    y: [0, -6, -2],
+                  }
+                : {
+                    x: 0,
+                    y: 0,
+                    rotateY: showBack ? 180 : 0,
+                    scale: 1,
+                  }
+            }
+            transition={
+              isOpening
+                ? {
+                    duration: 1.35,
+                    times: [0, 0.42, 1],
+                    ease: bookEase,
+                  }
+                : { duration: 0.7, ease: [0.4, 0, 0.2, 1] }
+            }
+            onAnimationComplete={() => {
+              if (isOpening) onOpenComplete?.();
+            }}
           >
-            {/* Front cover */}
+            {polish && (
+              <motion.div
+                className="book-contact-shadow"
+                animate={
+                  isOpening
+                    ? { opacity: [0.55, 0.75, 0.35], scaleX: [1, 1.15, 1.35] }
+                    : { opacity: 0.55, scaleX: 1 }
+                }
+                transition={{ duration: isOpening ? 1.35 : 0.4 }}
+              />
+            )}
+
             <div
-              className="relative overflow-hidden rounded-r-md rounded-l-sm border border-zinc-700 shadow-2xl"
+              className="relative h-full w-full overflow-hidden rounded-r-md rounded-l-sm border border-zinc-700 shadow-2xl"
               style={{
                 backfaceVisibility: 'hidden',
                 borderLeft: `4px solid ${brandColors.gold}`,
                 background: `linear-gradient(160deg, ${brandColors.card} 0%, ${brandColors.bgGradientTo} 100%)`,
               }}
             >
-              <div className="p-8 md:p-10">
-                <p
-                  className="text-xs font-semibold uppercase tracking-[0.35em]"
-                  style={{ color: brandColors.gold }}
-                >
-                  {brand.name}
-                </p>
+              {polish && <div className="book-spine-highlight" />}
+              <div className="flex h-full flex-col p-6 md:p-8">
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  className="h-8 w-auto max-w-[200px] object-contain md:h-9"
+                />
 
-                <h1 className="mt-4 font-serif text-4xl font-bold leading-tight text-white">
+                <h1 className="mt-5 font-serif text-2xl font-bold leading-tight text-white md:text-3xl">
                   {manifest.title}
                 </h1>
 
-                <p className="mt-3 font-serif text-lg italic text-zinc-400">{manifest.subtitle}</p>
+                <p className="mt-2 font-serif text-base italic text-zinc-400 md:text-lg">
+                  {manifest.subtitle}
+                </p>
 
-                <div className="mt-8 space-y-3 text-sm text-zinc-300">
+                <div className="mt-6 space-y-2.5 text-sm text-zinc-300">
                   <div className="flex items-center gap-2">
                     <Layers size={16} style={{ color: brandColors.gold }} />
                     <span>{chapterCount} Chapters</span>
@@ -120,12 +181,38 @@ export function BookCover({
                 </div>
 
                 {!hasContent && (
-                  <p className="mt-6 text-sm text-zinc-500">
+                  <p className="mt-4 text-sm text-zinc-500">
                     New chapters are added regularly. Check back soon.
                   </p>
                 )}
 
-                <div className="mt-10 flex flex-col gap-3">
+                <div className="mt-auto space-y-4 border-t border-zinc-700/80 pt-5">
+                  <div className="space-y-2.5">
+                    <div className="flex items-start gap-2.5 text-sm text-zinc-300">
+                      <Phone size={16} className="mt-0.5 shrink-0" style={{ color: brandColors.gold }} />
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                          Contact
+                        </p>
+                        <a
+                          href={`tel:${brand.contactPhone}`}
+                          className="font-medium text-white transition-colors hover:text-[#C6A43B]"
+                        >
+                          {brand.contactPhone}
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2.5 text-sm text-zinc-300">
+                      <MapPin size={16} className="mt-0.5 shrink-0" style={{ color: brandColors.gold }} />
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                          Address
+                        </p>
+                        <p className="leading-relaxed text-zinc-300">{brand.contactAddress}</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <Button
                     size="lg"
                     className="w-full font-semibold shadow-lg"
@@ -133,26 +220,18 @@ export function BookCover({
                       background: brandColors.gold,
                       color: brandColors.textOnGold,
                     }}
-                    onClick={() => onStartReading(false)}
+                    disabled={isOpening}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      beginOpen();
+                    }}
                   >
-                    Start Reading
+                    {isOpening ? 'Opening…' : 'Start Learning'}
                   </Button>
-
-                  {hasProgress && hasContent && (
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      className="w-full border-zinc-600 bg-white/10 text-white hover:bg-white/20"
-                      onClick={() => onStartReading(true)}
-                    >
-                      Continue (p. {savedPageIndex + 1})
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
 
-            {/* Back cover */}
             <div
               className="absolute inset-0 overflow-hidden rounded-l-md rounded-r-sm border border-zinc-700 shadow-2xl"
               style={{
@@ -161,21 +240,9 @@ export function BookCover({
                 borderRight: `4px solid ${brandColors.gold}`,
               }}
             >
-              <BackCover />
+              <BookBackCover />
             </div>
           </motion.div>
-        </div>
-
-        <div className="mt-6 flex flex-col items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setShowBack((v) => !v)}
-            className="flex items-center gap-2 rounded-xl border border-zinc-600 px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-[#C6A43B] hover:text-[#C6A43B]"
-          >
-            <RotateCcw size={15} />
-            {showBack ? 'View Front Cover' : 'View Back Cover'}
-          </button>
-          <p className="text-sm text-zinc-500">{brand.tagline}</p>
         </div>
       </motion.div>
     </div>

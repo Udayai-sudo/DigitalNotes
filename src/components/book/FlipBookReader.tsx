@@ -11,8 +11,9 @@ import {
 import HTMLFlipBook from 'react-pageflip';
 import type { FlipBookRef } from 'react-pageflip';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import { useVirtualWindow } from '../../hooks/useVirtualPages';
+import { useVirtualWindow, VIRTUAL_WINDOW_SIZE } from '../../hooks/useVirtualPages';
 import type { FlatPage, ThemeMode } from '../../types/book';
+import { getBookPageSize } from '../../config/bookMotion';
 import { themeConfig } from '../../config/theme';
 import { BookPage, preloadNearbyPages } from './BookPage';
 
@@ -20,6 +21,8 @@ export interface FlipBookHandle {
   flipNext: () => void;
   flipPrev: () => void;
   goToPage: (index: number) => void;
+  /** Flip back to page 0 quickly, then call onComplete. */
+  flipToStartRapid: (onComplete: () => void) => void;
 }
 
 interface FlipBookReaderProps {
@@ -76,20 +79,26 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
     ref,
   ) {
     const flipRef = useRef<FlipBookRef>(null);
+    const indexRef = useRef(currentIndex);
+    const rewindTimerRef = useRef<number | null>(null);
     const isMobile = useIsMobile();
     const colors = themeConfig[theme];
     const totalPages = pages.length;
-    const { windowStart, windowEnd } = useVirtualWindow(currentIndex, totalPages);
+    const virtual = useVirtualWindow(currentIndex, totalPages);
 
-    const [dimensions, setDimensions] = useState({ width: 400, height: 560 });
+    const [dimensions, setDimensions] = useState(() => getBookPageSize());
+    /** Pins page window at 0 and speeds flips for End Session rewind. */
+    const [rewinding, setRewinding] = useState(false);
+
+    indexRef.current = currentIndex;
+
+    const windowStart = rewinding ? 0 : virtual.windowStart;
+    const windowEnd = rewinding
+      ? Math.min(totalPages, Math.max(currentIndex + 2, VIRTUAL_WINDOW_SIZE))
+      : virtual.windowEnd;
 
     useEffect(() => {
-      const update = () => {
-        const maxWidth = Math.min(window.innerWidth - 32, 520);
-        const width = Math.max(280, maxWidth);
-        const height = Math.round(width * 1.35);
-        setDimensions({ width, height });
-      };
+      const update = () => setDimensions(getBookPageSize());
 
       update();
       window.addEventListener('resize', update);
@@ -110,7 +119,7 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       return slots;
     }, [pages, windowEnd, windowStart]);
 
-    const localIndex = currentIndex - windowStart;
+    const localIndex = Math.max(0, Math.min(windowPages.length - 1, currentIndex - windowStart));
 
     const flipNext = useCallback(() => {
       if (currentIndex >= totalPages - 1) return;
@@ -150,6 +159,75 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       [onPageChange, totalPages],
     );
 
+    const clearRewindTimer = useCallback(() => {
+      if (rewindTimerRef.current != null) {
+        window.clearTimeout(rewindTimerRef.current);
+        rewindTimerRef.current = null;
+      }
+    }, []);
+
+    const finishRewind = useCallback(
+      (onComplete: () => void) => {
+        clearRewindTimer();
+        if (indexRef.current > 0) onPageChange(0);
+        setRewinding(false);
+        rewindTimerRef.current = window.setTimeout(() => {
+          rewindTimerRef.current = null;
+          onComplete();
+        }, 200);
+      },
+      [clearRewindTimer, onPageChange],
+    );
+
+    const flipToStartRapid = useCallback(
+      (onComplete: () => void) => {
+        clearRewindTimer();
+
+        if (indexRef.current <= 0) {
+          onComplete();
+          return;
+        }
+
+        if (isMobile) {
+          onPageChange(0);
+          rewindTimerRef.current = window.setTimeout(() => {
+            rewindTimerRef.current = null;
+            onComplete();
+          }, 160);
+          return;
+        }
+
+        setRewinding(true);
+
+        if (indexRef.current > 8) {
+          onPageChange(6);
+        }
+
+        const deadline = Date.now() + 4000;
+
+        const step = () => {
+          if (indexRef.current <= 0 || Date.now() > deadline) {
+            finishRewind(onComplete);
+            return;
+          }
+
+          const api = flipRef.current?.pageFlip();
+          if (api && api.getCurrentPageIndex() > 0) {
+            api.flipPrev();
+          } else {
+            onPageChange(Math.max(0, indexRef.current - 1));
+          }
+
+          rewindTimerRef.current = window.setTimeout(step, 200);
+        };
+
+        rewindTimerRef.current = window.setTimeout(step, 160);
+      },
+      [clearRewindTimer, finishRewind, isMobile, onPageChange],
+    );
+
+    useEffect(() => () => clearRewindTimer(), [clearRewindTimer]);
+
     useEffect(() => {
       const api = flipRef.current?.pageFlip();
       if (!api || api.getPageCount() === 0) return;
@@ -160,7 +238,11 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       }
     }, [currentIndex, windowStart]);
 
-    useImperativeHandle(ref, () => ({ flipNext, flipPrev, goToPage }), [flipNext, flipPrev, goToPage]);
+    useImperativeHandle(
+      ref,
+      () => ({ flipNext, flipPrev, goToPage, flipToStartRapid }),
+      [flipNext, flipPrev, goToPage, flipToStartRapid],
+    );
 
     const handleFlip = useCallback(
       (e: { data: number }) => {
@@ -213,16 +295,16 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
 
         <HTMLFlipBook
           ref={flipRef}
-          key={`${windowStart}-${zoom}-${resetKey}`}
+          key={rewinding ? `rewind-${zoom}-${resetKey}` : `${windowStart}-${zoom}-${resetKey}`}
           width={dimensions.width}
           height={dimensions.height}
           size="fixed"
           minWidth={280}
-          maxWidth={520}
+          maxWidth={720}
           minHeight={380}
-          maxHeight={720}
+          maxHeight={960}
           drawShadow
-          flippingTime={800}
+          flippingTime={rewinding ? 170 : 800}
           usePortrait={false}
           startPage={localIndex}
           autoSize={false}
@@ -230,9 +312,9 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
           showCover={false}
           mobileScrollSupport
           clickEventForward={false}
-          useMouseEvents
+          useMouseEvents={!rewinding}
           swipeDistance={30}
-          showPageCorners
+          showPageCorners={!rewinding}
           className={clsx('book-flip shadow-2xl', colors.shadow)}
           onFlip={handleFlip}
         >

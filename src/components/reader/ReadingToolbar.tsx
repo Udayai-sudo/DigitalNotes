@@ -12,7 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { brandColors, themeConfig } from '../../config/theme';
+import { brand, brandColors, themeConfig } from '../../config/theme';
 import type { ThemeMode } from '../../types/book';
 import { Button } from '../ui/Button';
 
@@ -72,6 +72,12 @@ export function ReadingToolbar({
         <ArrowLeft size={18} />
         Back to Cover
       </Button>
+
+      <img
+        src={theme === 'light' || theme === 'sepia' ? brand.logoOnLight : brand.logo}
+        alt={brand.name}
+        className="ml-1 hidden h-6 w-auto max-w-[140px] object-contain sm:block"
+      />
 
       <div className="mx-auto flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={onPrev} disabled={currentPage <= 0} aria-label="Previous page">

@@ -22,7 +22,7 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
         )}
       >
         <img
-          src={brand.logo}
+          src={theme === 'dark' ? brand.logo : brand.logoOnLight}
           alt={brand.name}
           className="mb-8 h-12 w-auto max-w-[220px] object-contain md:h-14"
         />
@@ -43,7 +43,7 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
       className={clsx('flex h-full w-full flex-col items-center justify-center p-8 text-center', colors.paper)}
     >
       <img
-        src={brand.logo}
+        src={theme === 'dark' ? brand.logo : brand.logoOnLight}
         alt={brand.name}
         className="mb-6 h-10 w-auto max-w-[200px] object-contain opacity-90 md:h-12"
       />

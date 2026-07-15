@@ -25,6 +25,8 @@ export function BookReaderApp() {
 
   const [view, setView] = useState<AppView>('cover');
   const [startPageIndex, setStartPageIndex] = useState(0);
+  const [isOpening, setIsOpening] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const savedProgress = useReadingProgress({
     bookId: manifest?.id ?? '',
@@ -56,11 +58,25 @@ export function BookReaderApp() {
     );
   }
 
-  const handleStartReading = (fromSaved?: boolean) => {
+  const handleRequestOpen = (fromSaved?: boolean) => {
     const savedPage = savedProgress.getSavedPage();
     setStartPageIndex(fromSaved ? savedPage : 0);
     dismissNewChapters();
+    setIsOpening(true);
+  };
+
+  const handleOpenComplete = () => {
+    setIsOpening(false);
     setView('reading');
+  };
+
+  const handleRequestClose = () => {
+    setIsClosing(true);
+  };
+
+  const handleCloseComplete = () => {
+    setIsClosing(false);
+    setView('cover');
   };
 
   return (
@@ -73,7 +89,9 @@ export function BookReaderApp() {
             manifest={manifest}
             pages={pages}
             initialPageIndex={startPageIndex}
-            onBackToCover={() => setView('cover')}
+            isClosing={isClosing}
+            onRequestClose={handleRequestClose}
+            onCloseComplete={handleCloseComplete}
           />
         )
       ) : (
@@ -83,7 +101,9 @@ export function BookReaderApp() {
           totalPages={contentPageCount}
           readingTimeMinutes={readingTimeMinutes}
           savedPageIndex={savedProgress.getSavedPage()}
-          onStartReading={handleStartReading}
+          isOpening={isOpening}
+          onRequestOpen={handleRequestOpen}
+          onOpenComplete={handleOpenComplete}
         />
       )}
 
