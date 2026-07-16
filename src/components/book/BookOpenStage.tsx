@@ -27,8 +27,10 @@ interface BookOpenStageProps {
 
 /**
  * Closed cover = CoverFace.
- * Cover open ONLY = HTMLFlipBook soft-flip (CoverPageFlip) — same engine as inside pages.
- * Inside reading = original FlipBookReader (unchanged from the "Nice" build).
+ * Cover open/close = CoverPageFlip (same soft flip as inside pages).
+ * Inside reading = original FlipBookReader.
+ *
+ * End Session: rapid rewind to first page → cover page-flip shut → closed cover.
  */
 export function BookOpenStage({
   manifest,
@@ -53,11 +55,15 @@ export function BookOpenStage({
 
   const [pageSize, setPageSize] = useState(() => getBookPageSize());
   const [currentPageIndex, setCurrentPageIndex] = useState(initialPageIndex);
+  /** 0 idle · 1 rewinding pages · 2 cover soft-flip shut */
   const [closePhase, setClosePhase] = useState(0);
 
-  const showClosedCover = showCover && !isOpening;
-  const showCoverFlip = isOpening;
-  const showInnerBook = (!showCover && !isOpening) || isClosing;
+  const showClosedCover = showCover && !isOpening && !isClosing;
+  const showCoverOpenFlip = isOpening;
+  const showCoverCloseFlip = isClosing && closePhase === 2;
+  // Keep FlipBook mounted through phase 0→1 so rewind can run; hide only for cover shut.
+  const showInnerBook =
+    (!showCover && !isOpening && !isClosing) || (isClosing && closePhase <= 1);
   const isReading = !showCover && !isOpening && !isClosing;
 
   useReadingProgress({
@@ -89,17 +95,54 @@ export function BookOpenStage({
       setClosePhase(0);
       return;
     }
-    if (closePhase !== 0) return;
 
     if (prefersReducedMotion) {
       onCloseComplete();
       return;
     }
 
-    setClosePhase(1);
-    flipRef.current?.flipToStartRapid(() => {
-      setClosePhase(2);
-    });
+    // Step 1: mount/ensure FlipBook, then rewind.
+    if (closePhase === 0) {
+      setClosePhase(1);
+      return;
+    }
+
+    if (closePhase !== 1) return;
+
+    let cancelled = false;
+    const startRewind = () => {
+      if (cancelled) return;
+      const api = flipRef.current;
+      if (!api) {
+        // FlipBook not ready yet — retry once.
+        window.setTimeout(() => {
+          if (cancelled) return;
+          if (flipRef.current) {
+            flipRef.current.flipToStartRapid(() => {
+              if (cancelled) return;
+              setCurrentPageIndex(0);
+              setClosePhase(2);
+            });
+          } else {
+            setCurrentPageIndex(0);
+            setClosePhase(2);
+          }
+        }, 50);
+        return;
+      }
+
+      api.flipToStartRapid(() => {
+        if (cancelled) return;
+        setCurrentPageIndex(0);
+        setClosePhase(2);
+      });
+    };
+
+    const raf = window.requestAnimationFrame(startRewind);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf);
+    };
   }, [isClosing, closePhase, prefersReducedMotion, onCloseComplete]);
 
   useEffect(() => {
@@ -135,6 +178,7 @@ export function BookOpenStage({
 
   const pageW = pageSize.width;
   const pageH = pageSize.height;
+  const showCoverFlip = showCoverOpenFlip || showCoverCloseFlip;
   const stageWidth = showClosedCover ? pageW : pageW * 2;
 
   const stageBg =
@@ -193,8 +237,9 @@ export function BookOpenStage({
           </div>
         )}
 
-        {showCoverFlip && (
+        {showCoverOpenFlip && (
           <CoverPageFlip
+            mode="open"
             manifest={manifest}
             chapterCount={chapterCount}
             totalPages={totalPages}
@@ -203,21 +248,27 @@ export function BookOpenStage({
             pageHeight={pageH}
             theme={theme}
             bookTitle={manifest.title}
-            onOpenComplete={onOpenComplete}
+            onComplete={onOpenComplete}
+          />
+        )}
+
+        {showCoverCloseFlip && (
+          <CoverPageFlip
+            mode="close"
+            manifest={manifest}
+            chapterCount={chapterCount}
+            totalPages={totalPages}
+            firstInnerPage={pages[0] ?? null}
+            pageWidth={pageW}
+            pageHeight={pageH}
+            theme={theme}
+            bookTitle={manifest.title}
+            onComplete={onCloseComplete}
           />
         )}
 
         {showInnerBook && (
-          <motion.div
-            className="relative h-full w-full"
-            style={{ width: pageW * 2, height: pageH }}
-            initial={false}
-            animate={{ opacity: closePhase >= 2 ? 0 : 1 }}
-            transition={{ duration: 0.45, ease: bookEase }}
-            onAnimationComplete={() => {
-              if (closePhase === 2) onCloseComplete();
-            }}
-          >
+          <div className="relative h-full w-full" style={{ width: pageW * 2, height: pageH }}>
             <FlipBookReader
               ref={flipRef}
               pages={pages}
@@ -230,7 +281,7 @@ export function BookOpenStage({
               embedded
               pageSize={pageSize}
             />
-          </motion.div>
+          </div>
         )}
       </motion.div>
     </div>

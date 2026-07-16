@@ -5,6 +5,8 @@ import type { BookManifest, FlatPage, ThemeMode } from '../../types/book';
 import { BookPage } from './BookPage';
 import { CoverFace } from './CoverFace';
 
+export type CoverFlipMode = 'open' | 'close';
+
 interface CoverPageFlipProps {
   manifest: BookManifest;
   chapterCount: number;
@@ -14,7 +16,9 @@ interface CoverPageFlipProps {
   pageHeight: number;
   theme: ThemeMode;
   bookTitle: string;
-  onOpenComplete: () => void;
+  /** open = Start Learning; close = final End Session cover shut. */
+  mode?: CoverFlipMode;
+  onComplete: () => void;
 }
 
 const CoverFlipSlot = forwardRef<
@@ -31,8 +35,8 @@ const CoverFlipSlot = forwardRef<
 });
 
 /**
- * One-shot cover open using the same HTMLFlipBook soft-flip as inside pages.
- * Reading stays on FlipBookReader — this component unmounts after open.
+ * One-shot cover open/close using the same HTMLFlipBook soft-flip as inside pages.
+ * Does not handle reading — FlipBookReader owns that.
  */
 export function CoverPageFlip({
   manifest,
@@ -43,48 +47,74 @@ export function CoverPageFlip({
   pageHeight,
   theme,
   bookTitle,
-  onOpenComplete,
+  mode = 'open',
+  onComplete,
 }: CoverPageFlipProps) {
   const flipRef = useRef<FlipBookRef>(null);
   const doneRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
   const hasContent = chapterCount > 0 && totalPages > 0;
+  const isClose = mode === 'close';
+
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
+    doneRef.current = false;
+
+    const finishOnce = () => {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      onCompleteRef.current();
+    };
+
     const timer = window.setTimeout(() => {
       try {
-        flipRef.current?.pageFlip()?.flipNext();
-      } catch {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onOpenComplete();
+        const api = flipRef.current?.pageFlip();
+        if (!api) {
+          finishOnce();
+          return;
         }
+        if (isClose) {
+          if (api.getCurrentPageIndex() !== 1) api.turnToPage(1);
+          window.setTimeout(() => {
+            try {
+              api.flipPrev();
+            } catch {
+              finishOnce();
+            }
+          }, 40);
+        } else {
+          api.flipNext();
+        }
+      } catch {
+        finishOnce();
       }
-    }, 80);
+    }, 120);
 
-    const fallback = window.setTimeout(() => {
-      if (!doneRef.current) {
-        doneRef.current = true;
-        onOpenComplete();
-      }
-    }, 1400);
+    const fallback = window.setTimeout(finishOnce, 1600);
 
     return () => {
       window.clearTimeout(timer);
       window.clearTimeout(fallback);
     };
-  }, [onOpenComplete]);
+  }, [isClose]);
 
   const finish = (pageIndex: number) => {
     if (doneRef.current) return;
-    if (pageIndex < 1) return;
+    if (isClose) {
+      if (pageIndex > 0) return;
+    } else if (pageIndex < 1) {
+      return;
+    }
     doneRef.current = true;
-    onOpenComplete();
+    onCompleteRef.current();
   };
 
   return (
     <div className="relative" style={{ width: pageWidth * 2, height: pageHeight }}>
       <HTMLFlipBook
         ref={flipRef}
+        key={mode}
         width={pageWidth}
         height={pageHeight}
         size="fixed"
@@ -95,7 +125,7 @@ export function CoverPageFlip({
         drawShadow
         flippingTime={800}
         usePortrait={false}
-        startPage={0}
+        startPage={isClose ? 1 : 0}
         autoSize={false}
         maxShadowOpacity={0.5}
         showCover
@@ -113,7 +143,7 @@ export function CoverPageFlip({
             chapterCount={chapterCount}
             totalPages={totalPages}
             hasContent={hasContent}
-            isOpening
+            isOpening={!isClose}
           />
         </CoverFlipSlot>
 
