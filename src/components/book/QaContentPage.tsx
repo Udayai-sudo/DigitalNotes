@@ -20,23 +20,35 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
     : String(page.pageInChapter);
 
   return (
-    <div className={clsx('relative flex h-full w-full flex-col', colors.paper, colors.text)}>
-      <header className="flex shrink-0 items-center justify-between gap-3 px-7 pt-6 md:px-9 md:pt-7">
+    <div
+      className={clsx(
+        'relative flex h-full w-full flex-col overflow-hidden',
+        colors.paper,
+        colors.text,
+      )}
+    >
+      <header
+        className={clsx(
+          'relative z-10 flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4 md:px-8',
+          colors.paper,
+          colors.paperBorder,
+        )}
+      >
         <img
           src={theme === 'dark' ? brand.logo : brand.logoOnLight}
           alt={brand.name}
-          className="h-7 w-auto max-w-[160px] object-contain opacity-90 md:h-8"
+          className="h-6 w-auto max-w-[140px] shrink-0 object-contain object-left opacity-90 md:h-7"
         />
         <p
-          className="truncate text-right text-[11px] font-medium tracking-wide md:text-xs"
+          className="min-w-0 truncate text-right text-[11px] font-medium tracking-wide md:text-xs"
           style={{ color: brandColors.gold }}
         >
           {title}
         </p>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 py-4 md:px-12">
-        <div className="flex w-full max-w-md flex-col justify-center gap-10 md:gap-12">
+      <div className="relative z-0 min-h-0 flex-1 overflow-y-auto px-6 py-5 md:px-10 md:py-6">
+        <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-8 md:gap-10">
           {items.map((item, index) => {
             const number = (page.pageInChapter - 1) * 2 + index + 1;
             return (
@@ -47,9 +59,9 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
                 >
                   Question {number}
                 </p>
-                <h3 className="font-serif text-lg font-bold leading-snug md:text-xl">{item.question}</h3>
+                <h3 className="font-serif text-base font-bold leading-snug md:text-lg">{item.question}</h3>
                 <div
-                  className="mx-auto mt-3 mb-4 h-px w-10"
+                  className="mx-auto mt-2.5 mb-3 h-px w-10"
                   style={{ background: brandColors.gold }}
                 />
                 <p className={clsx('text-sm leading-relaxed md:text-[15px]', colors.muted)}>
@@ -63,20 +75,22 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
 
       <footer
         className={clsx(
-          'flex shrink-0 items-end justify-between gap-3 border-t px-5 pb-5 pt-3 text-[9px] leading-snug md:px-7 md:text-[10px]',
+          'relative z-10 grid shrink-0 grid-cols-3 items-center gap-3 border-t px-6 py-3 text-[10px] md:px-8',
+          colors.paper,
           colors.paperBorder,
           colors.muted,
         )}
       >
-        <p className="max-w-[42%] text-left">BTM Layout 2nd Stage, Bengaluru, Karnataka 560076</p>
-        <p className="font-medium tabular-nums" style={{ color: brandColors.gold }}>
+        <a href={`tel:${brand.contactPhone}`} className="justify-self-start hover:opacity-80">
+          {brand.contactPhone}
+        </a>
+        <p
+          className="justify-self-center font-medium tabular-nums"
+          style={{ color: brandColors.gold }}
+        >
           {pageLabel}
         </p>
-        <p className="max-w-[42%] text-right">
-          <a href={`tel:${brand.contactPhone}`} className="hover:opacity-80">
-            {brand.contactPhone}
-          </a>
-        </p>
+        <span className="justify-self-end" aria-hidden />
       </footer>
     </div>
   );
