@@ -16,6 +16,7 @@ interface ReadingViewProps {
   manifest: BookManifest;
   pages: FlatPage[];
   initialPageIndex: number;
+  isOpening?: boolean;
   isClosing?: boolean;
   onRequestClose: () => void;
   /** After rewind to page 0, hand off to the front cover. */
@@ -32,6 +33,7 @@ export function ReadingView({
   manifest,
   pages,
   initialPageIndex,
+  isOpening = false,
   isClosing = false,
   onRequestClose,
   onCloseComplete,
@@ -103,6 +105,7 @@ export function ReadingView({
   }, [requestCloseToCover]);
 
   const slide = getBookSlideDistance();
+  const openingDuration = 1.75;
 
   return (
     <div
@@ -117,8 +120,8 @@ export function ReadingView({
         <motion.div
           className="book-stage-vignette"
           initial={false}
-          animate={{ opacity: isClosing ? 1 : 0 }}
-          transition={{ duration: 0.35 }}
+          animate={{ opacity: isClosing ? 1 : isOpening ? 0.75 : 0 }}
+          transition={{ duration: isOpening ? openingDuration : 0.35 }}
         />
       )}
 
@@ -128,8 +131,8 @@ export function ReadingView({
       >
         <motion.div
           className="relative z-10 flex h-full max-h-[min(92vh,900px)] w-full items-center justify-center"
-          style={{ transformOrigin: 'center center' }}
-          initial={{ x: slide, rotateY: -28, scale: 0.94, opacity: 0.55 }}
+          style={{ transformOrigin: 'left center' }}
+          initial={isOpening ? false : { x: slide, rotateY: -28, scale: 0.94, opacity: 0.55 }}
           animate={
             closePhase >= 2
               ? {
@@ -138,8 +141,17 @@ export function ReadingView({
                   scale: 0.96,
                   opacity: 0,
                 }
+              : isOpening
+                ? {
+                    x: [slide * 1.02, slide * 0.78, slide * 0.38, 0],
+                    y: [18, 10, 4, 0],
+                    rotateY: [-82, -58, -24, 0],
+                    scale: [1.045, 1.03, 1.012, 1],
+                    opacity: [0.04, 0.18, 0.58, 1],
+                  }
               : {
                   x: 0,
+                  y: 0,
                   rotateY: 0,
                   scale: 1,
                   opacity: 1,
@@ -148,7 +160,13 @@ export function ReadingView({
           transition={
             closePhase >= 2
               ? { duration: 0.55, ease: bookEase }
-              : { duration: 0.75, ease: bookEase }
+              : isOpening
+                ? {
+                    duration: openingDuration,
+                    times: [0, 0.2, 0.58, 1],
+                    ease: bookEase,
+                  }
+                : { duration: 0.75, ease: bookEase }
           }
           onAnimationComplete={() => {
             if (closePhase === 2) onCloseComplete?.();

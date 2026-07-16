@@ -44,3 +44,6 @@ export function getBookPageSize(): { width: number; height: number } {
 /** Shared easing: soft settle (Apple Books-like). */
 export const bookEase = [0.22, 1, 0.36, 1] as const;
 export const bookEaseInOut = [0.4, 0, 0.2, 1] as const;
+
+/** Cover fold + inner reveal — one continuous motion. */
+export const BOOK_OPEN_DURATION = 2.2;

@@ -34,6 +34,10 @@ interface FlipBookReaderProps {
   bookTitle?: string;
   onEndSession?: () => void;
   resetKey?: number;
+  /** Skip outer perspective when nested inside BookOpenStage. */
+  embedded?: boolean;
+  /** Force exact page size (must match closed cover). */
+  pageSize?: { width: number; height: number };
 }
 
 interface FlipPageSlotProps {
@@ -75,7 +79,18 @@ const FlipPageSlot = forwardRef<HTMLDivElement, FlipPageSlotProps>(function Flip
 
 export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
   function FlipBookReader(
-    { pages, currentIndex, onPageChange, zoom, theme, bookTitle, onEndSession, resetKey = 0 },
+    {
+      pages,
+      currentIndex,
+      onPageChange,
+      zoom,
+      theme,
+      bookTitle,
+      onEndSession,
+      resetKey = 0,
+      embedded = false,
+      pageSize: pageSizeProp,
+    },
     ref,
   ) {
     const flipRef = useRef<FlipBookRef>(null);
@@ -86,7 +101,7 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
     const totalPages = pages.length;
     const virtual = useVirtualWindow(currentIndex, totalPages);
 
-    const [dimensions, setDimensions] = useState(() => getBookPageSize());
+    const [dimensions, setDimensions] = useState(() => pageSizeProp ?? getBookPageSize());
     /** Pins page window at 0 and speeds flips for End Session rewind. */
     const [rewinding, setRewinding] = useState(false);
 
@@ -98,6 +113,11 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       : virtual.windowEnd;
 
     useEffect(() => {
+      if (pageSizeProp) {
+        setDimensions(pageSizeProp);
+        return;
+      }
+
       const update = () => {
         const next = getBookPageSize();
         setDimensions((prev) =>
@@ -108,7 +128,7 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       update();
       window.addEventListener('resize', update);
       return () => window.removeEventListener('resize', update);
-    }, [isMobile]);
+    }, [isMobile, pageSizeProp]);
 
     useEffect(() => {
       preloadNearbyPages(pages, currentIndex, zoom);
@@ -295,8 +315,17 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
     }
 
     return (
-      <div className="relative mx-auto" style={{ perspective: '2000px' }}>
-        <div className="absolute -inset-6 rounded-3xl bg-black/10 blur-2xl dark:bg-black/40" />
+      <div
+        className={clsx('relative', !embedded && 'mx-auto')}
+        style={
+          embedded
+            ? { width: dimensions.width * 2, height: dimensions.height }
+            : { perspective: '2000px' }
+        }
+      >
+        {!embedded && (
+          <div className="absolute -inset-6 rounded-3xl bg-black/10 blur-2xl dark:bg-black/40" />
+        )}
 
         <HTMLFlipBook
           ref={flipRef}
@@ -304,10 +333,10 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
           width={dimensions.width}
           height={dimensions.height}
           size="fixed"
-          minWidth={280}
-          maxWidth={720}
-          minHeight={380}
-          maxHeight={960}
+          minWidth={dimensions.width}
+          maxWidth={dimensions.width}
+          minHeight={dimensions.height}
+          maxHeight={dimensions.height}
           drawShadow
           flippingTime={rewinding ? 170 : 800}
           usePortrait={false}

@@ -47,7 +47,7 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
         </p>
       </header>
 
-      <div className="relative z-0 min-h-0 flex-1 overflow-y-auto px-6 py-5 md:px-10 md:py-6">
+      <div className="book-page-scroll relative z-0 min-h-0 flex-1 overflow-y-auto px-6 py-5 md:px-10 md:py-6">
         <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-8 md:gap-10">
           {items.map((item, index) => {
             const number = (page.pageInChapter - 1) * 2 + index + 1;

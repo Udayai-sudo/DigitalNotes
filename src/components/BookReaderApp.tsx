@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useBookData } from '../hooks/useBookData';
 import { useReadingProgress } from '../hooks/useReadingProgress';
-import { BookCover } from './book/BookCover';
+import { BookOpenStage } from './book/BookOpenStage';
 import { EmptyBookView } from './EmptyBookView';
 import { NewChaptersBanner } from './reader/NewChaptersBanner';
-import { ReadingView } from './ReadingView';
 import { Button } from './ui/Button';
 
 type AppView = 'cover' | 'reading';
@@ -15,7 +14,6 @@ export function BookReaderApp() {
     pages,
     chapterCount,
     contentPageCount,
-    readingTimeMinutes,
     loading,
     error,
     newChaptersAdded,
@@ -62,12 +60,12 @@ export function BookReaderApp() {
     const savedPage = savedProgress.getSavedPage();
     setStartPageIndex(fromSaved ? savedPage : 0);
     dismissNewChapters();
+    setView('reading');
     setIsOpening(true);
   };
 
   const handleOpenComplete = () => {
     setIsOpening(false);
-    setView('reading');
   };
 
   const handleRequestClose = () => {
@@ -79,33 +77,30 @@ export function BookReaderApp() {
     setView('cover');
   };
 
+  const showCover = view === 'cover' || isOpening;
+
   return (
     <>
-      {view === 'reading' ? (
-        pages.length === 0 ? (
+      <div className="relative min-h-screen">
+        {pages.length === 0 && view === 'reading' && !isOpening ? (
           <EmptyBookView onBackToCover={() => setView('cover')} />
         ) : (
-          <ReadingView
+          <BookOpenStage
             manifest={manifest}
             pages={pages}
+            chapterCount={chapterCount}
+            totalPages={contentPageCount}
             initialPageIndex={startPageIndex}
+            showCover={showCover}
+            isOpening={isOpening}
             isClosing={isClosing}
+            onRequestOpen={handleRequestOpen}
+            onOpenComplete={handleOpenComplete}
             onRequestClose={handleRequestClose}
             onCloseComplete={handleCloseComplete}
           />
-        )
-      ) : (
-        <BookCover
-          manifest={manifest}
-          chapterCount={chapterCount}
-          totalPages={contentPageCount}
-          readingTimeMinutes={readingTimeMinutes}
-          savedPageIndex={savedProgress.getSavedPage()}
-          isOpening={isOpening}
-          onRequestOpen={handleRequestOpen}
-          onOpenComplete={handleOpenComplete}
-        />
-      )}
+        )}
+      </div>
 
       <NewChaptersBanner count={newChaptersAdded} onDismiss={dismissNewChapters} />
     </>

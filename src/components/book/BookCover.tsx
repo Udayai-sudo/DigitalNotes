@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { BookOpen, Clock, Layers, MapPin, Phone } from 'lucide-react';
+import { BookOpen, Layers, MapPin, Phone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   bookEase,
@@ -16,7 +16,6 @@ interface BookCoverProps {
   manifest: BookManifest;
   chapterCount: number;
   totalPages: number;
-  readingTimeMinutes: number;
   savedPageIndex: number;
   isOpening?: boolean;
   /** After End Session, open covering the back face first. */
@@ -29,7 +28,6 @@ export function BookCover({
   manifest,
   chapterCount,
   totalPages,
-  readingTimeMinutes,
   savedPageIndex: _savedPageIndex,
   isOpening = false,
   initialShowBack = false,
@@ -43,6 +41,7 @@ export function BookCover({
   const slideDistance = getBookSlideDistance();
   const polish = bookMotionFlags.USE_MOTION_POLISH;
   const hingeOrigin = isOpening ? 'left center' : 'center center';
+  const openingDuration = 1.75;
 
   useEffect(() => {
     setShowBack(initialShowBack);
@@ -109,10 +108,10 @@ export function BookCover({
             animate={
               isOpening
                 ? {
-                    x: [0, slideDistance * 0.85, slideDistance],
-                    rotateY: [showBack ? 180 : 0, showBack ? 12 : -8, -82],
-                    scale: [1, 1.03, 1.05],
-                    y: [0, -6, -2],
+                    x: [0, slideDistance * 0.36, slideDistance * 0.72, slideDistance],
+                    rotateY: [showBack ? 180 : 0, showBack ? 8 : -8, -38, -82],
+                    scale: [1, 1.01, 1.03, 1.045],
+                    y: [0, 6, 12, 18],
                   }
                 : {
                     x: 0,
@@ -124,8 +123,8 @@ export function BookCover({
             transition={
               isOpening
                 ? {
-                    duration: 1.35,
-                    times: [0, 0.42, 1],
+                    duration: openingDuration,
+                    times: [0, 0.22, 0.62, 1],
                     ease: bookEase,
                   }
                 : { duration: 0.7, ease: [0.4, 0, 0.2, 1] }
@@ -142,7 +141,7 @@ export function BookCover({
                     ? { opacity: [0.55, 0.75, 0.35], scaleX: [1, 1.15, 1.35] }
                     : { opacity: 0.55, scaleX: 1 }
                 }
-                transition={{ duration: isOpening ? 1.35 : 0.4 }}
+                transition={{ duration: isOpening ? openingDuration : 0.4 }}
               />
             )}
 
@@ -178,10 +177,6 @@ export function BookCover({
                   <div className="flex items-center gap-2">
                     <BookOpen size={16} style={{ color: brandColors.gold }} />
                     <span>{totalPages} Pages</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} style={{ color: brandColors.gold }} />
-                    <span>~{readingTimeMinutes} min read</span>
                   </div>
                 </div>
 
