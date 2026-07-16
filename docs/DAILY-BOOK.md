@@ -10,10 +10,18 @@ One **docx** = one **book branch** = one **GitHub Pages URL**.
 
 ## Option A — One command (recommended)
 
-Put the file in `books/sources/` (or pass any path):
+Put the file in `books/sources/` (or pass any path).
+
+**Windows / PowerShell (use this — npm strips `--slug` flags):**
 
 ```powershell
-npm run new-book -- --slug 05-day-05 --docx "books/sources/Day-05-Session.docx" --title "Day 05 Session" --deploy
+npm run new-book -- 05-day-05 "books/sources/Day-05-Session.docx" "Day 05 Session" deploy
+```
+
+**Or call node directly (flags work):**
+
+```powershell
+node scripts/create-book-branch.mjs --slug 05-day-05 --docx "books/sources/Day-05-Session.docx" --title "Day 05 Session" --deploy
 ```
 
 This will:
@@ -40,7 +48,7 @@ Watch deploy: https://github.com/udaymi8871/TextBook/actions
 
 ```powershell
 git checkout main
-npm run new-book -- --slug 05-day-05 --docx "books/sources/Day-05-Session.docx" --title "Day 05 Session" --push
+npm run new-book -- 05-day-05 "books/sources/Day-05-Session.docx" "Day 05 Session" push
 ```
 
 ### 2) Trigger deploy from `main` (required)
@@ -95,14 +103,16 @@ Prefer numbered slugs (`01-…`, `02-…`) for daily sessions.
 
 ---
 
-## Flags
+## Args
 
 ```text
---slug      required (e.g. 05-day-05)
---docx      path to .docx
---title     optional display title
---push      push book/* branch
---deploy    push book branch + push main (deploy)
+npm run new-book -- <slug> "<docx-path>" "<title>" deploy
+
+slug     required (e.g. 05-day-05)
+docx     path to .docx
+title    optional display title
+deploy   push book branch + push main (deploy)
+push     push book branch only
 ```
 
 ---

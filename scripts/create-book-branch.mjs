@@ -21,16 +21,40 @@ function runCapture(command) {
 
 function parseArgs(argv) {
   const args = {};
+  const positionals = [];
+
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === '--slug') args.slug = argv[++i];
     else if (token === '--title') args.title = argv[++i];
     else if (token === '--pdf') args.pdf = argv[++i];
     else if (token === '--docx') args.docx = argv[++i];
-    else if (token === '--push') args.push = true;
-    else if (token === '--deploy') args.deploy = true;
+    else if (token === '--push' || token === 'push') args.push = true;
+    else if (token === '--deploy' || token === 'deploy') args.deploy = true;
     else if (token === '--no-commit') args.noCommit = true;
+    else if (token.startsWith('--')) {
+      console.error(`Unknown flag: ${token}`);
+      process.exit(1);
+    } else {
+      positionals.push(token);
+    }
   }
+
+  /**
+   * npm on Windows often strips `--slug` / `--docx` (treats them as npm config).
+   * Positional form always works:
+   *   npm run new-book -- 05-day-05 "books/sources/Day-05.docx" "Day 05 Session" deploy
+   */
+  if (!args.slug && positionals[0]) args.slug = positionals[0];
+  if (!args.docx && !args.pdf && positionals[1]) {
+    const source = positionals[1];
+    if (/\.pdf$/i.test(source)) args.pdf = source;
+    else args.docx = source;
+  }
+  if (!args.title && positionals[2] && !['push', 'deploy'].includes(positionals[2])) {
+    args.title = positionals[2];
+  }
+
   if (args.deploy) args.push = true;
   return args;
 }
@@ -179,16 +203,18 @@ function printUrls(entry, branch) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.slug || (!args.pdf && !args.docx)) {
-    console.error(`Usage:
-  npm run new-book -- --slug 05-day-05 --docx "books/sources/Day-05.docx" --title "Day 05" --deploy
+    console.error(`Usage (Windows / npm — preferred):
+  npm run new-book -- 05-day-05 "books/sources/Day-05.docx" "Day 05 Session" deploy
 
-Flags:
-  --slug     Required. URL slug, prefer NN-name (e.g. 05-day-05)
-  --docx     Path to today's Docs file (.docx)
-  --pdf      Path to a PDF instead of docx
-  --title    Optional display title
-  --push     Push the book/* branch to origin
-  --deploy   Push book branch + update main registry + push main (triggers GitHub Pages)
+Or call node directly (flags work):
+  node scripts/create-book-branch.mjs --slug 05-day-05 --docx "books/sources/Day-05.docx" --title "Day 05 Session" --deploy
+
+Args:
+  1 slug     Required (e.g. 05-day-05)
+  2 docx     Path to today's .docx (or .pdf)
+  3 title    Optional display title
+  deploy     Optional — push book branch + push main (triggers Pages)
+  push       Optional — push book branch only
 `);
     process.exit(1);
   }

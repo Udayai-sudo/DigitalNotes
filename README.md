@@ -16,7 +16,7 @@ Open [http://localhost:5173](http://localhost:5173)
 **Full guide:** [docs/DAILY-BOOK.md](docs/DAILY-BOOK.md)
 
 ```powershell
-npm run new-book -- --slug 05-day-05 --docx "books/sources/Day-05-Session.docx" --title "Day 05 Session" --deploy
+npm run new-book -- 05-day-05 "books/sources/Day-05-Session.docx" "Day 05 Session" deploy
 ```
 
 That creates `book/05-day-05`, pushes it, and pushes `main` to deploy.
