@@ -40,13 +40,6 @@ export async function fetchChapterContent(contentUrl: string): Promise<ChapterCo
   return (await response.json()) as ChapterContentFile;
 }
 
-export function getSessionLabel(manifest: BookManifest): string {
-  const slug = manifest.slug ?? '';
-  const match = slug.match(/^(\d+)/);
-  const day = match ? match[1].padStart(2, '0') : '01';
-  return `Day-${day} Session`;
-}
-
 function chunkQAItems(items: QAItem[], perPage: number): QAItem[][] {
   const size = Math.max(1, perPage);
   const chunks: QAItem[][] = [];
@@ -126,15 +119,14 @@ export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
 export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatPage[]): FlatPage[] {
   if (contentPages.length === 0) return contentPages;
 
-  const sessionLabel = getSessionLabel(manifest);
   const chapterId = contentPages[0].chapterId;
+  const bookTitle = manifest.title;
 
   const startPage: FlatPage = {
     kind: 'session-start',
     globalIndex: 0,
-    sessionLabel,
     chapterId,
-    chapterTitle: sessionLabel,
+    chapterTitle: bookTitle,
     chapterOrder: 0,
     pageInChapter: 0,
     pdfUrl: '',
@@ -147,18 +139,19 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
   }));
 
   /**
-   * Landscape spreads are [even|odd]. End Session must sit on the right page
-   * (odd index), matching local Demo 2. Odd content counts would leave End
-   * Session alone on the left with a blank right — pad one blank leaf first.
+   * Landscape spreads are [even|odd]. End Session must always be the last right page.
+   * - Last Q&A on left  → pair [last Q&A | End Session]
+   * - Last Q&A on right → pair [Q&A completed | End Session]
    */
   const pagesBeforeEnd: FlatPage[] = [startPage, ...wrappedContent];
+  const trailing: FlatPage[] = [];
+
   if (pagesBeforeEnd.length % 2 === 0) {
-    pagesBeforeEnd.push({
-      kind: 'blank',
+    trailing.push({
+      kind: 'qa-complete',
       globalIndex: pagesBeforeEnd.length,
-      sessionLabel,
       chapterId,
-      chapterTitle: '',
+      chapterTitle: bookTitle,
       chapterOrder: 0,
       pageInChapter: 0,
       pdfUrl: '',
@@ -167,8 +160,7 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
 
   const endPage: FlatPage = {
     kind: 'session-end',
-    globalIndex: pagesBeforeEnd.length,
-    sessionLabel,
+    globalIndex: pagesBeforeEnd.length + trailing.length,
     chapterId,
     chapterTitle: 'End Session',
     chapterOrder: 0,
@@ -176,7 +168,7 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
     pdfUrl: '',
   };
 
-  return [...pagesBeforeEnd, endPage];
+  return [...pagesBeforeEnd, ...trailing, endPage];
 }
 
 export function getChapterStartPages(pages: FlatPage[]): Map<string, number> {

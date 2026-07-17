@@ -98,9 +98,13 @@ function resolveSourcePath(sourceArg, extension) {
   throw new Error(`Source file not found: ${sourceArg}`);
 }
 
-function humanizeTitle(filePath) {
+function titleFromSource(filePath) {
   const base = path.basename(filePath, path.extname(filePath)).replace(/\.content$/i, '');
-  return base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return base.trim();
+}
+
+function humanizeTitle(filePath) {
+  return titleFromSource(filePath).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function dayFromSlug(slug) {
@@ -118,7 +122,7 @@ function archiveSource(sourcePath, slug, mode) {
 
 function setupBook({ slug, title, sourcePath, mode }) {
   const day = dayFromSlug(slug);
-  const bookTitle = title || humanizeTitle(sourcePath);
+  const bookTitle = title || titleFromSource(sourcePath);
   const sourceExt = mode === 'docx' ? '.docx' : '.pdf';
   const chapterFilename = `${slug}${sourceExt}`;
 
@@ -129,7 +133,7 @@ function setupBook({ slug, title, sourcePath, mode }) {
     id: `stringstack-${slug}`,
     slug,
     title: bookTitle,
-    subtitle: `Day ${day} · StringStack.ai`,
+    subtitle: 'StringStack.ai',
     author: 'StringStack Content Team',
     publisher: 'StringStack.ai',
     coverColor: '#252525',
@@ -156,7 +160,6 @@ function setupBook({ slug, title, sourcePath, mode }) {
     branch,
     title: bookTitle,
     source: chapterFilename,
-    sessionLabel: `Day-${day} Session`,
     githubUrl: `${GITHUB_BASE}/tree/${branch}`,
     pagesUrl: `${PAGES_BASE}/${slug}/`,
   };
@@ -192,7 +195,6 @@ function printUrls(entry, branch) {
   console.log(' BOOK READY');
   console.log('========================================');
   console.log(`  Title:   ${entry.title}`);
-  console.log(`  Session: ${entry.sessionLabel}`);
   console.log(`  Branch:  ${branch}`);
   console.log(`  GitHub:  ${entry.githubUrl}`);
   console.log(`  Live:    ${entry.pagesUrl}`);

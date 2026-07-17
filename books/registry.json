@@ -5,7 +5,6 @@
       "branch": "book/02-demo-2",
       "title": "Demo 2",
       "pdf": "02-demo-2.pdf",
-      "sessionLabel": "Day-02 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/02-demo-2"
     },
     {
@@ -13,7 +12,6 @@
       "branch": "book/05-day-05",
       "title": "Day 05 Session",
       "source": "05-day-05.docx",
-      "sessionLabel": "Day-05 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/05-day-05",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/05-day-05/",
       "docx": "05-day-05.docx"
@@ -23,7 +21,6 @@
       "branch": "book/06-day-06",
       "title": "Day 06 Session",
       "source": "06-day-06.docx",
-      "sessionLabel": "Day-06 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/06-day-06",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/06-day-06/",
       "docx": "06-day-06.docx"
@@ -31,9 +28,8 @@
     {
       "slug": "java-demo-1",
       "branch": "book/java-demo-1",
-      "title": "Java Demo 1",
+      "title": "Notes Java Demo-1",
       "source": "java-demo-1.docx",
-      "sessionLabel": "Day-01 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-1",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-1/",
       "docx": "java-demo-1.docx"
@@ -41,9 +37,8 @@
     {
       "slug": "java-demo-2",
       "branch": "book/java-demo-2",
-      "title": "Java Demo 2",
+      "title": "Notes Java Demo-2",
       "source": "java-demo-2.docx",
-      "sessionLabel": "Day-01 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-2",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-2/",
       "docx": "java-demo-2.docx"
@@ -51,9 +46,8 @@
     {
       "slug": "java-demo-3",
       "branch": "book/java-demo-3",
-      "title": "Java Demo 3",
+      "title": "Notes Java Demo-3",
       "source": "java-demo-3.docx",
-      "sessionLabel": "Day-01 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-3",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-3/",
       "docx": "java-demo-3.docx"
@@ -63,7 +57,6 @@
       "branch": "book/java-fundamentals",
       "title": "Java Fundamentals",
       "source": "java-fundamentals.docx",
-      "sessionLabel": "Day-01 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-fundamentals",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-fundamentals/",
       "docx": "java-fundamentals.docx"
@@ -71,9 +64,8 @@
     {
       "slug": "java-introduction-1",
       "branch": "book/java-introduction-1",
-      "title": "Java Introduction 1",
+      "title": "Notes Java Introduction-1",
       "source": "java-introduction-1.docx",
-      "sessionLabel": "Day-01 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-1",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-1/",
       "docx": "java-introduction-1.docx"
@@ -81,9 +73,8 @@
     {
       "slug": "java-introduction-2",
       "branch": "book/java-introduction-2",
-      "title": "Java Introduction 2",
+      "title": "Notes Java Introduction-2",
       "source": "java-introduction-2.docx",
-      "sessionLabel": "Day-01 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-2",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-2/",
       "docx": "java-introduction-2.docx"

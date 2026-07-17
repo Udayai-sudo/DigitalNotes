@@ -3,6 +3,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { preloadPdfPages, renderPdfPageToCanvas } from '../../services/pdfService';
 import type { FlatPage, ThemeMode } from '../../types/book';
 import { themeConfig } from '../../config/theme';
+import { QaCompletePage } from './QaCompletePage';
 import { QaContentPage } from './QaContentPage';
 import { SessionPage } from './SessionPage';
 
@@ -106,7 +107,7 @@ export const BookPage = memo(function BookPage({
 }: BookPageProps) {
   const colors = themeConfig[theme];
 
-  if (!page || page.kind === 'blank') {
+  if (!page) {
     return (
       <div
         className={clsx(
@@ -116,6 +117,20 @@ export const BookPage = memo(function BookPage({
           side === 'left' ? 'rounded-l-sm border-r' : 'rounded-r-sm',
         )}
       />
+    );
+  }
+
+  if (page.kind === 'qa-complete') {
+    return (
+      <div
+        className={clsx(
+          'h-full w-full overflow-hidden',
+          colors.paperBorder,
+          side === 'left' ? 'rounded-l-sm border-r' : 'rounded-r-sm',
+        )}
+      >
+        <QaCompletePage theme={theme} bookTitle={bookTitle} />
+      </div>
     );
   }
 

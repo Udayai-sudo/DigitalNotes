@@ -11,7 +11,7 @@ interface SessionPageProps {
 
 export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPageProps) {
   const colors = themeConfig[theme];
-  const label = page.sessionLabel ?? 'Day-01 Session';
+  const title = bookTitle || page.chapterTitle;
 
   if (page.kind === 'session-start') {
     return (
@@ -27,7 +27,7 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
           className="mb-8 h-12 w-auto max-w-[220px] object-contain md:h-14"
         />
         <h2 className="max-w-md font-serif text-3xl font-bold leading-tight text-stone-800 dark:text-white md:text-4xl">
-          {bookTitle || label}
+          {title}
         </h2>
         <div className="mt-6 h-px w-16" style={{ background: brandColors.gold }} />
         <p className="mt-6 text-sm text-stone-400">Turn the page to begin reading</p>
