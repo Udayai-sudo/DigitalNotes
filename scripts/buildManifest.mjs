@@ -161,11 +161,30 @@ function scanChapterSources(sortMode) {
 
 export function buildManifest() {
   const config = readBookConfig();
-  const sources = scanChapterSources(config.chapterSortMode);
+  let sources = scanChapterSources(config.chapterSortMode);
+
+  /**
+   * One live book URL = one chapter. Leftover `.content.json` files from other
+   * books in public/chapters must not concatenate (that restarts Question 1 mid-book).
+   */
+  if (config.singleBookMode && config.slug) {
+    const slug = String(config.slug).toLowerCase();
+    const matched = sources.filter((file) => file.base.toLowerCase() === slug);
+    if (matched.length > 0) {
+      sources = matched;
+    } else {
+      console.warn(
+        `singleBookMode: no chapter matching slug "${config.slug}" — using all scanned sources`,
+      );
+    }
+  }
 
   const chapters = sources.map((file, index) => {
     const linearOrder = index + 1;
-    const title = file.title || `Chapter ${linearOrder}`;
+    const title =
+      config.singleBookMode && config.title
+        ? config.title
+        : file.title || `Chapter ${linearOrder}`;
     const idSource = file.contentFilename || file.pdfFilename || file.base;
     const chapter = {
       id: slugify(idSource) || `chapter-${linearOrder}`,
