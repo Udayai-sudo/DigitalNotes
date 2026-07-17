@@ -1,4 +1,4 @@
-export type PageKind = 'session-start' | 'content' | 'session-end';
+export type PageKind = 'session-start' | 'content' | 'session-end' | 'blank';
 export type ChapterContentMode = 'pdf' | 'qa';
 
 export interface QAItem {

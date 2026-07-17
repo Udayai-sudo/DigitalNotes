@@ -100,6 +100,8 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
     const colors = themeConfig[theme];
     const totalPages = pages.length;
     const virtual = useVirtualWindow(currentIndex, totalPages);
+    /** Daily QA books are small — keep all pages mounted so spreads never remount/repeat. */
+    const useFullBook = totalPages <= 64;
 
     const [dimensions, setDimensions] = useState(() => pageSizeProp ?? getBookPageSize());
     /** Pins page window at 0 and speeds flips for End Session rewind. */
@@ -107,10 +109,12 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
 
     indexRef.current = currentIndex;
 
-    const windowStart = rewinding ? 0 : virtual.windowStart;
-    const windowEnd = rewinding
-      ? Math.min(totalPages, Math.max(currentIndex + 2, VIRTUAL_WINDOW_SIZE))
-      : virtual.windowEnd;
+    const windowStart = useFullBook || rewinding ? 0 : virtual.windowStart;
+    const windowEnd = useFullBook
+      ? totalPages
+      : rewinding
+        ? Math.min(totalPages, Math.max(currentIndex + 2, VIRTUAL_WINDOW_SIZE))
+        : virtual.windowEnd;
 
     useEffect(() => {
       if (pageSizeProp) {
@@ -149,33 +153,56 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
     const flipNext = useCallback(() => {
       if (currentIndex >= totalPages - 1) return;
 
+      const step = isMobile ? 1 : 2;
+      const target = Math.min(totalPages - 1, currentIndex + step);
+
       const api = flipRef.current?.pageFlip();
       if (api) {
-        const local = api.getCurrentPageIndex();
-        const nextLocal = currentIndex + 1 - windowStart;
-        if (local < nextLocal && nextLocal < windowPages.length) {
-          api.flipNext();
-          return;
+        const localTarget = target - windowStart;
+        if (localTarget > api.getCurrentPageIndex() && localTarget < windowPages.length) {
+          try {
+            api.flip(localTarget);
+            return;
+          } catch {
+            try {
+              api.flipNext();
+              return;
+            } catch {
+              // fall through
+            }
+          }
         }
       }
 
-      onPageChange(Math.min(totalPages - 1, currentIndex + 1));
-    }, [currentIndex, onPageChange, totalPages, windowPages.length, windowStart]);
+      onPageChange(target);
+    }, [currentIndex, isMobile, onPageChange, totalPages, windowPages.length, windowStart]);
 
     const flipPrev = useCallback(() => {
       if (currentIndex <= 0) return;
 
+      const step = isMobile ? 1 : 2;
+      const target = Math.max(0, currentIndex - step);
+
       const api = flipRef.current?.pageFlip();
       if (api) {
-        const local = api.getCurrentPageIndex();
-        if (local > 0) {
-          api.flipPrev();
-          return;
+        const localTarget = target - windowStart;
+        if (localTarget < api.getCurrentPageIndex() && localTarget >= 0) {
+          try {
+            api.flip(localTarget);
+            return;
+          } catch {
+            try {
+              api.flipPrev();
+              return;
+            } catch {
+              // fall through
+            }
+          }
         }
       }
 
-      onPageChange(Math.max(0, currentIndex - 1));
-    }, [currentIndex, onPageChange]);
+      onPageChange(target);
+    }, [currentIndex, isMobile, onPageChange, windowStart]);
 
     const goToPage = useCallback(
       (index: number) => {
@@ -271,13 +298,35 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
 
     const handleFlip = useCallback(
       (e: { data: number }) => {
-        const newLocal = e.data;
-        const globalIndex = Math.max(0, Math.min(totalPages - 1, windowStart + newLocal));
+        let globalIndex = Math.max(0, Math.min(totalPages - 1, windowStart + e.data));
+
+        /**
+         * Landscape pageflip steps by one page, so the same leaf can appear once on the
+         * right and again on the left (questions look repeated). Snap to even indices so
+         * each flip shows a unique spread: [0|1], [2|3], [4|5], …
+         */
+        if (!isMobile && !rewinding && globalIndex % 2 === 1) {
+          const goingForward = globalIndex >= indexRef.current;
+          globalIndex = goingForward
+            ? Math.min(totalPages - 1, globalIndex + 1)
+            : Math.max(0, globalIndex - 1);
+
+          const api = flipRef.current?.pageFlip();
+          const local = globalIndex - windowStart;
+          if (api && api.getCurrentPageIndex() !== local) {
+            try {
+              api.turnToPage(local);
+            } catch {
+              // ignore
+            }
+          }
+        }
+
         if (globalIndex !== currentIndex) {
           onPageChange(globalIndex);
         }
       },
-      [currentIndex, onPageChange, totalPages, windowStart],
+      [currentIndex, isMobile, onPageChange, rewinding, totalPages, windowStart],
     );
 
     if (totalPages === 0) {
@@ -329,7 +378,13 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
 
         <HTMLFlipBook
           ref={flipRef}
-          key={rewinding ? `rewind-${zoom}-${resetKey}` : `${windowStart}-${zoom}-${resetKey}`}
+          key={
+            rewinding
+              ? `rewind-${zoom}-${resetKey}`
+              : useFullBook
+                ? `full-${zoom}-${resetKey}`
+                : `${windowStart}-${zoom}-${resetKey}`
+          }
           width={dimensions.width}
           height={dimensions.height}
           size="fixed"

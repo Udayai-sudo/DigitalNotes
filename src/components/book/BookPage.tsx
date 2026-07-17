@@ -106,17 +106,16 @@ export const BookPage = memo(function BookPage({
 }: BookPageProps) {
   const colors = themeConfig[theme];
 
-  if (!page) {
+  if (!page || page.kind === 'blank') {
     return (
       <div
         className={clsx(
           'flex h-full w-full items-center justify-center',
           colors.paper,
-          side === 'left' ? 'rounded-l-sm' : 'rounded-r-sm',
+          colors.paperBorder,
+          side === 'left' ? 'rounded-l-sm border-r' : 'rounded-r-sm',
         )}
-      >
-        <span className="font-serif text-sm text-stone-300">—</span>
-      </div>
+      />
     );
   }
 

@@ -26,10 +26,7 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
           alt={brand.name}
           className="mb-8 h-12 w-auto max-w-[220px] object-contain md:h-14"
         />
-        <p className="text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: brandColors.gold }}>
-          {label}
-        </p>
-        <h2 className="mt-3 max-w-md font-serif text-3xl font-bold leading-tight text-stone-800 dark:text-white md:text-4xl">
+        <h2 className="max-w-md font-serif text-3xl font-bold leading-tight text-stone-800 dark:text-white md:text-4xl">
           {bookTitle || label}
         </h2>
         <div className="mt-6 h-px w-16" style={{ background: brandColors.gold }} />
@@ -47,11 +44,8 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
         alt={brand.name}
         className="mb-6 h-10 w-auto max-w-[200px] object-contain opacity-90 md:h-12"
       />
-      <p className="text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: brandColors.gold }}>
-        {label}
-      </p>
       {bookTitle && (
-        <h2 className="mt-3 max-w-sm font-serif text-2xl font-bold text-stone-800 dark:text-white">{bookTitle}</h2>
+        <h2 className="max-w-sm font-serif text-2xl font-bold text-stone-800 dark:text-white">{bookTitle}</h2>
       )}
       <p className="mt-4 max-w-xs text-sm text-stone-500 dark:text-zinc-400">
         You have completed this session. Great work!

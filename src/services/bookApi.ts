@@ -56,6 +56,24 @@ function chunkQAItems(items: QAItem[], perPage: number): QAItem[][] {
   return chunks.length > 0 ? chunks : [[]];
 }
 
+/** Drop duplicate questions (same text after normalize) — keeps first occurrence. */
+export function dedupeQAItems(items: QAItem[]): QAItem[] {
+  const seen = new Set<string>();
+  const unique: QAItem[] = [];
+
+  for (const item of items) {
+    const key = item.question
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
+}
+
 export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
   const pages: FlatPage[] = [];
   let globalIndex = 0;
@@ -65,7 +83,7 @@ export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
   for (const chapter of sortedChapters) {
     if (chapter.contentMode === 'qa' && chapter.qaItems && chapter.qaItems.length > 0) {
       const perPage = chapter.itemsPerPage && chapter.itemsPerPage > 0 ? chapter.itemsPerPage : 2;
-      const chunks = chunkQAItems(chapter.qaItems, perPage);
+      const chunks = chunkQAItems(dedupeQAItems(chapter.qaItems), perPage);
 
       chunks.forEach((qaItems, index) => {
         pages.push({
@@ -128,9 +146,28 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
     globalIndex: index + 1,
   }));
 
+  /**
+   * Landscape spreads are [even|odd]. End Session must sit on the right page
+   * (odd index), matching local Demo 2. Odd content counts would leave End
+   * Session alone on the left with a blank right — pad one blank leaf first.
+   */
+  const pagesBeforeEnd: FlatPage[] = [startPage, ...wrappedContent];
+  if (pagesBeforeEnd.length % 2 === 0) {
+    pagesBeforeEnd.push({
+      kind: 'blank',
+      globalIndex: pagesBeforeEnd.length,
+      sessionLabel,
+      chapterId,
+      chapterTitle: '',
+      chapterOrder: 0,
+      pageInChapter: 0,
+      pdfUrl: '',
+    });
+  }
+
   const endPage: FlatPage = {
     kind: 'session-end',
-    globalIndex: wrappedContent.length + 1,
+    globalIndex: pagesBeforeEnd.length,
     sessionLabel,
     chapterId,
     chapterTitle: 'End Session',
@@ -139,7 +176,7 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
     pdfUrl: '',
   };
 
-  return [startPage, ...wrappedContent, endPage];
+  return [...pagesBeforeEnd, endPage];
 }
 
 export function getChapterStartPages(pages: FlatPage[]): Map<string, number> {
@@ -166,7 +203,7 @@ export function estimateReadingTimeMinutes(totalPages: number, pagesPerMinute = 
 export async function enrichChapterWithContent(chapter: BookChapter): Promise<BookChapter> {
   if (chapter.contentMode === 'qa' && chapter.contentUrl) {
     const content = await fetchChapterContent(chapter.contentUrl);
-    const items = Array.isArray(content.items) ? content.items : [];
+    const items = dedupeQAItems(Array.isArray(content.items) ? content.items : []);
     const perPage = content.itemsPerPage && content.itemsPerPage > 0 ? content.itemsPerPage : 2;
     return {
       ...chapter,
