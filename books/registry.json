@@ -29,6 +29,36 @@
       "docx": "06-day-06.docx"
     },
     {
+      "slug": "java-demo-1",
+      "branch": "book/java-demo-1",
+      "title": "Java Demo 1",
+      "source": "java-demo-1.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-1/",
+      "docx": "java-demo-1.docx"
+    },
+    {
+      "slug": "java-demo-2",
+      "branch": "book/java-demo-2",
+      "title": "Java Demo 2",
+      "source": "java-demo-2.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-2",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-2/",
+      "docx": "java-demo-2.docx"
+    },
+    {
+      "slug": "java-demo-3",
+      "branch": "book/java-demo-3",
+      "title": "Java Demo 3",
+      "source": "java-demo-3.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-3",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-3/",
+      "docx": "java-demo-3.docx"
+    },
+    {
       "slug": "java-fundamentals",
       "branch": "book/java-fundamentals",
       "title": "Java Fundamentals",
@@ -37,6 +67,26 @@
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-fundamentals",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-fundamentals/",
       "docx": "java-fundamentals.docx"
+    },
+    {
+      "slug": "java-introduction-1",
+      "branch": "book/java-introduction-1",
+      "title": "Java Introduction 1",
+      "source": "java-introduction-1.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-1/",
+      "docx": "java-introduction-1.docx"
+    },
+    {
+      "slug": "java-introduction-2",
+      "branch": "book/java-introduction-2",
+      "title": "Java Introduction 2",
+      "source": "java-introduction-2.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-2",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-2/",
+      "docx": "java-introduction-2.docx"
     }
   ]
 }
