@@ -46,7 +46,11 @@ def is_question(s):
     s2 = normalize_q(s)
     if s2.endswith("?"):
         return True
-    return bool(re.match(r"^(What|Why|How|When|Where|Who|Explain|Describe|Define)\\b", s2, re.I))
+    # Numbered lines (e.g. "27. When ...") can be questions without "?".
+    # Do NOT treat bare "When/What ..." answer bodies as questions.
+    if re.match(r"^\\d+[G]?\\.\\s*", s):
+        return bool(re.match(r"^(What|Why|How|When|Where|Who|Explain|Describe|Define)\\b", s2, re.I))
+    return False
 
 items = []
 i = 0
@@ -57,11 +61,15 @@ while i < len(clean):
         ans = []
         i += 1
         while i < len(clean) and not is_question(clean[i]):
-            ans.append(clean[i])
+            chunk = clean[i].strip()
+            if not re.fullmatch(r"Answer\\s*:?", chunk, re.I):
+                ans.append(chunk)
             i += 1
         answer = re.sub(r"\\s+", " ", " ".join(ans)).strip()
         answer = answer.replace("Network Without", "Network. Without")
         if answer:
+            if not answer.lower().startswith("answer"):
+                answer = f"Answer: {answer}"
             items.append({"question": q, "answer": answer})
     else:
         i += 1
