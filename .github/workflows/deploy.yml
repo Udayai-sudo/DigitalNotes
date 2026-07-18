@@ -1,7 +1,7 @@
 name: Deploy Books to GitHub Pages
 
 # Deploy only from main (GitHub Pages environment blocks book/* branches).
-# Builds every book/* branch into its own live path under /TextBook/<slug>/.
+# Builds every book/* branch into its own live path under /DigitalNotes/<slug>/.
 on:
   push:
     branches:
@@ -42,21 +42,21 @@ jobs:
           SITE_DIR="$PWD/site"
           mkdir -p "$SITE_DIR"
 
-          # Root: https://udaymi8871.github.io/TextBook/
-          export VITE_BASE=/TextBook/
+          # Root: https://udayai-sudo.github.io/DigitalNotes/
+          export VITE_BASE=/DigitalNotes/
           npm run build
           cp -R dist/. "$SITE_DIR/"
           cp "$SITE_DIR/index.html" "$SITE_DIR/404.html"
 
           # Per-book URLs, e.g.
-          # https://udaymi8871.github.io/TextBook/01-demo-1/
-          # https://udaymi8871.github.io/TextBook/03-demo-3/
+          # https://udayai-sudo.github.io/DigitalNotes/notes-java-introduction-3/
+          # https://udayai-sudo.github.io/DigitalNotes/notes-java-operators-1/
           for branch in $(git branch -r | sed 's|^[[:space:]]*origin/||' | grep '^book/' | sort -u); do
             slug="${branch#book/}"
-            echo "::group::Building $branch → /TextBook/${slug}/"
+            echo "::group::Building $branch → /DigitalNotes/${slug}/"
             git checkout -f "origin/$branch"
             npm ci
-            export VITE_BASE="/TextBook/${slug}/"
+            export VITE_BASE="/DigitalNotes/${slug}/"
             npm run build
             mkdir -p "$SITE_DIR/$slug"
             cp -R dist/. "$SITE_DIR/$slug/"

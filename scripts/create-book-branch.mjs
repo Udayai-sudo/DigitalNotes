@@ -8,8 +8,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const REGISTRY_PATH = path.join(ROOT, 'books', 'registry.json');
 const SOURCES_DIR = path.join(ROOT, 'books', 'sources');
-const PAGES_BASE = 'https://udaymi8871.github.io/TextBook';
-const GITHUB_BASE = 'https://github.com/udaymi8871/TextBook';
+const PAGES_BASE = 'https://udayai-sudo.github.io/DigitalNotes';
+const GITHUB_BASE = 'https://github.com/Udayai-sudo/DigitalNotes';
+/** Push book branches here — keeps personal TextBook `origin` untouched. */
+const GIT_REMOTE = process.env.BOOK_REMOTE || 'digitalnotes';
 
 function run(command, options = {}) {
   execSync(command, { cwd: ROOT, stdio: 'inherit', ...options });
@@ -261,17 +263,17 @@ Args:
   printUrls(entry, branch);
 
   if (args.push) {
-    run(`git push -u origin ${branch} --force-with-lease`);
-    console.log(`Pushed ${branch} to origin`);
+    run(`git push -u ${GIT_REMOTE} ${branch} --force-with-lease`);
+    console.log(`Pushed ${branch} to ${GIT_REMOTE}`);
   } else {
-    console.log(`Next: git push -u origin ${branch} --force-with-lease`);
+    console.log(`Next: git push -u ${GIT_REMOTE} ${branch} --force-with-lease`);
   }
 
   if (args.deploy) {
     console.log('');
     console.log('Triggering GitHub Pages deploy via main…');
     syncRegistryToMain(args.slug, bookTitle);
-    run('git push origin main');
+    run(`git push ${GIT_REMOTE} main`);
     console.log('');
     console.log('Deploy started. Watch:');
     console.log(`  ${GITHUB_BASE}/actions`);
@@ -284,7 +286,7 @@ Args:
     console.log('Deploy manually:');
     console.log('  git checkout main');
     console.log(`  git commit --allow-empty -m "Deploy books including ${args.slug}"`);
-    console.log('  git push origin main');
+    console.log(`  git push ${GIT_REMOTE} main`);
     console.log('');
     console.log('Or re-run with --deploy next time.');
   }

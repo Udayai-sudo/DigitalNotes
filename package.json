@@ -7,7 +7,7 @@
     "sync-chapters": "node scripts/buildManifest.mjs",
     "new-book": "node scripts/create-book-branch.mjs",
     "list-books": "node -e \"const r=JSON.parse(require('fs').readFileSync('books/registry.json','utf8')); console.log(r.books.map(b=>`${b.branch} | ${b.title} | ${b.pagesUrl||''}`).join('\\n'))\"",
-    "deploy-books": "git checkout main && git commit --allow-empty -m \"Deploy all book branches\" && git push origin main",
+    "deploy-books": "git checkout main && git commit --allow-empty -m \"Deploy all book branches\" && git push digitalnotes main",
     "dev": "npm run sync-chapters && vite",
     "build": "npm run sync-chapters && tsc && vite build",
     "preview": "vite preview"
