@@ -1,5 +1,5 @@
 {
-  "title": "Notes Java Introduction 3",
+  "title": "Notes Java Introduction-3",
   "itemsPerPage": 2,
   "source": "notes-java-introduction-3.docx",
   "items": [
@@ -85,7 +85,7 @@
     },
     {
       "question": "What happens when we execute a Java program using the java command?",
-      "answer": "Answer:"
+      "answer": "Answer: When we execute a Java program using the java command, the Operating System transfers the control to the JVM. The JVM starts searching for the main() method. Once it finds the main() method, it transfers the control to it. From there, the statements inside the main() method are executed one by one."
     },
     {
       "question": "What is the role of the Operating System during Java program execution?",
@@ -109,11 +109,11 @@
     },
     {
       "question": "What happens when System.out.println() is executed?",
-      "answer": "Answer:"
+      "answer": "Answer: When System.out.println() is executed, the specified text is printed on the monitor. Since println() is used, after printing the text, the cursor automatically moves to the next line. Then the control proceeds to the next statement."
     },
     {
       "question": "What happens when System.out.print() is executed?",
-      "answer": "Answer:"
+      "answer": "Answer: When System.out.print() is executed, the specified text is printed on the monitor. Since print() is used, the cursor does not move to the next line. It remains at the same position, and the next output is printed from where the cursor is currently blinking."
     },
     {
       "question": "What is the difference between print() and println()?",
