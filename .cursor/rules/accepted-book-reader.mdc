@@ -1,0 +1,38 @@
+---
+description: Stakeholder-accepted book reader behavior and safe cleanup/revert rules
+alwaysApply: true
+---
+
+# StringStack book reader — accepted build & safety
+
+## Stakeholder-accepted behavior (do not regress)
+
+This version was accepted. Preserve it unless the user explicitly asks to change it:
+
+1. **Closed cover** — `CoverFace` + Start Learning
+2. **Cover open** — `CoverPageFlip` mode `open` (same soft pageflip as inner pages)
+3. **Reading** — original `FlipBookReader` (landscape spreads, Q&A 2 per page)
+4. **End Session** — rapid rewind to first page → `CoverPageFlip` mode `close` → closed cover
+5. **No repeated questions** — landscape flips snap to unique spreads; Q&A list is deduped
+
+Key files: `BookOpenStage.tsx`, `CoverPageFlip.tsx`, `CoverFace.tsx`, `FlipBookReader.tsx`
+
+## Cleanup / delete files
+
+- Remove unused files **only** with near-certainty (zero imports, clearly replaced).
+- If there is **any confusion**, do **not** delete.
+- Prefer leaving docs, `books/sources/`, root `Demo-*.pdf`, and `render.yaml` unless the user explicitly asks to remove them.
+
+## If something breaks after a change
+
+Revert to the last known-good local/git state. Example:
+
+```powershell
+git checkout HEAD -- src/components/ReadingView.tsx src/components/book/BookCover.tsx src/components/book/BookBackCover.tsx src/config/bookMotion.ts
+```
+
+Or restore broader `src/` paths the change touched. Do not leave the app broken — restore first, then fix carefully.
+
+## Deploy reminder
+
+Live book URLs build from `book/<slug>` branches. Pushing `main` alone may not update a specific live book until that book branch includes the code and Pages is redeployed.

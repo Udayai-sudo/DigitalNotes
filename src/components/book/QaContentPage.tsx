@@ -29,7 +29,7 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
     >
       <header
         className={clsx(
-          'relative z-10 flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4 md:px-8',
+          'relative z-10 flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2.5 md:px-6 md:py-3',
           colors.paper,
           colors.paperBorder,
         )}
@@ -37,34 +37,34 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
         <img
           src={theme === 'dark' ? brand.logo : brand.logoOnLight}
           alt={brand.name}
-          className="h-6 w-auto max-w-[140px] shrink-0 object-contain object-left opacity-90 md:h-7"
+          className="h-5 w-auto max-w-[120px] shrink-0 object-contain object-left opacity-90 md:h-6"
         />
         <p
-          className="min-w-0 truncate text-right text-[11px] font-medium tracking-wide md:text-xs"
+          className="min-w-0 truncate text-right text-[10px] font-medium tracking-wide md:text-[11px]"
           style={{ color: brandColors.gold }}
         >
           {title}
         </p>
       </header>
 
-      <div className="book-page-scroll relative z-0 min-h-0 flex-1 overflow-y-auto px-6 py-5 md:px-10 md:py-6">
-        <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-8 md:gap-10">
+      <div className="book-page-scroll relative z-0 min-h-0 flex-1 overflow-y-auto px-4 py-3 md:px-7 md:py-4">
+        <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-5 md:gap-6">
           {items.map((item, index) => {
             const number = (page.pageInChapter - 1) * 2 + index + 1;
             return (
               <article key={`${page.pageInChapter}-${index}`} className="text-center">
                 <p
-                  className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em]"
+                  className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.28em]"
                   style={{ color: brandColors.gold }}
                 >
                   Question {number}
                 </p>
-                <h3 className="font-serif text-base font-bold leading-snug md:text-lg">{item.question}</h3>
+                <h3 className="font-serif text-[15px] font-bold leading-snug md:text-base">{item.question}</h3>
                 <div
-                  className="mx-auto mt-2.5 mb-3 h-px w-10"
+                  className="mx-auto mt-2 mb-2.5 h-px w-8"
                   style={{ background: brandColors.gold }}
                 />
-                <p className={clsx('text-sm leading-relaxed md:text-[15px]', colors.muted)}>
+                <p className={clsx('text-[13px] leading-relaxed md:text-sm', colors.muted)}>
                   {item.answer}
                 </p>
               </article>
@@ -75,7 +75,7 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
 
       <footer
         className={clsx(
-          'relative z-10 grid shrink-0 grid-cols-3 items-center gap-3 border-t px-6 py-3 text-[10px] md:px-8',
+          'relative z-10 grid shrink-0 grid-cols-3 items-center gap-2 border-t px-4 py-2 text-[9px] md:px-6',
           colors.paper,
           colors.paperBorder,
           colors.muted,
