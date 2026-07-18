@@ -123,6 +123,15 @@
       "githubUrl": "https://github.com/Udayai-sudo/DigitalNotes/tree/book/notes-java-operators-1",
       "pagesUrl": "https://udayai-sudo.github.io/DigitalNotes/notes-java-operators-1/",
       "docx": "notes-java-operators-1.docx"
+    },
+    {
+      "slug": "notes-java-variable-1",
+      "branch": "book/notes-java-variable-1",
+      "title": "Notes Java Variable-1",
+      "source": "notes-java-variable-1.docx",
+      "githubUrl": "https://github.com/Udayai-sudo/DigitalNotes/tree/book/notes-java-variable-1",
+      "pagesUrl": "https://udayai-sudo.github.io/DigitalNotes/notes-java-variable-1/",
+      "docx": "notes-java-variable-1.docx"
     }
   ]
 }
