@@ -49,8 +49,65 @@ def is_question(s):
     # Numbered lines (e.g. "27. When ...") can be questions without "?".
     # Do NOT treat bare "When/What ..." answer bodies as questions.
     if re.match(r"^\\d+[G]?\\.\\s*", s):
-        return bool(re.match(r"^(What|Why|How|When|Where|Who|Explain|Describe|Define)\\b", s2, re.I))
+        return bool(
+            re.match(
+                r"^(What|Why|How|When|Where|Who|Which|Can|Could|Does|Do|Is|Are|Will|"
+                r"Would|Should|Explain|Describe|Define)\\b",
+                s2,
+                re.I,
+            )
+        )
     return False
+
+def is_code_line(s):
+    line = s.strip()
+    if not line:
+        return False
+    if line in ("{", "}", "};"):
+        return True
+    if re.match(r"^(//|/\\*|\\*|@\\w+)", line):
+        return True
+    if re.match(
+        r"^(package|import|class|interface|enum|record|public|protected|private|static|final|"
+        r"abstract|return|throw|try|catch|finally|if|else|for|while|do|switch|case|default|"
+        r"break|continue|new|System\\.|boolean\\s+\\w+|byte\\s+\\w+|short\\s+\\w+|"
+        r"int\\s+\\w+|long\\s+\\w+|float\\s+\\w+|double\\s+\\w+|char\\s+\\w+|"
+        r"String\\s+\\w+|var\\s+\\w+)",
+        line,
+    ):
+        return True
+    return line.endswith(";") and bool(re.search(r"[=()?:]|\\+\\+|--", line))
+
+def format_answer(chunks):
+    sections = []
+    prose = []
+    code = []
+
+    def flush_prose():
+        if prose:
+            sections.append(" ".join(prose))
+            prose.clear()
+
+    def flush_code():
+        if code:
+            sections.append("\`\`\`java\\n" + "\\n".join(code) + "\\n\`\`\`")
+            code.clear()
+
+    for chunk in chunks:
+        line = chunk.strip()
+        if not line or re.fullmatch(r"Answer\\s*:?", line, re.I):
+            continue
+        if is_code_line(line):
+            flush_prose()
+            code.append(line)
+        else:
+            flush_code()
+            prose.append(re.sub(r"\\s+", " ", line))
+
+    flush_prose()
+    flush_code()
+    body = "\\n\\n".join(sections).replace("Network Without", "Network. Without")
+    return f"Answer: {body}" if body else ""
 
 items = []
 i = 0
@@ -61,15 +118,10 @@ while i < len(clean):
         ans = []
         i += 1
         while i < len(clean) and not is_question(clean[i]):
-            chunk = clean[i].strip()
-            if not re.fullmatch(r"Answer\\s*:?", chunk, re.I):
-                ans.append(chunk)
+            ans.append(clean[i])
             i += 1
-        answer = re.sub(r"\\s+", " ", " ".join(ans)).strip()
-        answer = answer.replace("Network Without", "Network. Without")
+        answer = format_answer(ans)
         if answer:
-            if not answer.lower().startswith("answer"):
-                answer = f"Answer: {answer}"
             items.append({"question": q, "answer": answer})
     else:
         i += 1
@@ -94,6 +146,10 @@ function runPython(script, docxPath) {
   throw lastError ?? new Error('Python is required to convert .docx chapters');
 }
 
+export function extractDocxItems(docxPath) {
+  return JSON.parse(runPython(EXTRACT_PY, docxPath));
+}
+
 export function convertDocxChapters() {
   if (!fs.existsSync(CHAPTERS_DIR)) return [];
 
@@ -107,8 +163,7 @@ export function convertDocxChapters() {
 
     let items;
     try {
-      const raw = runPython(EXTRACT_PY, docxPath);
-      items = JSON.parse(raw);
+      items = extractDocxItems(docxPath);
     } catch (err) {
       console.warn(`Skipping docx convert for ${filename}:`, err instanceof Error ? err.message : err);
       continue;
