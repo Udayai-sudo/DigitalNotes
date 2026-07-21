@@ -12,17 +12,17 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-20T13:18:57.071Z",
+  "updatedAt": "2026-07-21T05:58:38.058Z",
   "chapters": [
     {
       "id": "notes-java-operators-3",
       "title": "Notes Java Operators-3",
       "order": 1,
-      "uploadedAt": "2026-07-20T13:18:57.057Z",
+      "uploadedAt": "2026-07-21T05:53:41.089Z",
       "filename": "notes-java-operators-3.content.json",
       "contentUrl": "/chapters/notes-java-operators-3.content.json",
       "contentMode": "qa",
-      "pageCount": 7,
+      "pageCount": 8,
       "pdfUrl": ""
     }
   ]

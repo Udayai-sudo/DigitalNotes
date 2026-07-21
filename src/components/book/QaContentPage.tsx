@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { brand, brandColors, themeConfig } from '../../config/theme';
 import type { FlatPage, ThemeMode } from '../../types/book';
+import { BookRichText } from './BookRichText';
 
 interface QaContentPageProps {
   page: FlatPage;
@@ -64,9 +65,11 @@ export function QaContentPage({ page, theme, bookTitle }: QaContentPageProps) {
                   className="mx-auto mt-2 mb-2.5 h-px w-8"
                   style={{ background: brandColors.gold }}
                 />
-                <p className={clsx('text-[13px] leading-relaxed md:text-sm', colors.muted)}>
-                  {item.answer}
-                </p>
+                <BookRichText
+                  text={item.answer}
+                  theme={theme}
+                  className={clsx('text-[13px] leading-relaxed md:text-sm', colors.muted)}
+                />
               </article>
             );
           })}
