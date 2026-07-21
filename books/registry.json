@@ -143,6 +143,15 @@
       "docx": "notes-java-introduction-1.docx"
     },
     {
+      "slug": "notes-java-introduction-2",
+      "branch": "book/notes-java-introduction-2",
+      "title": "Notes Java Introduction-2",
+      "source": "notes-java-introduction-2.docx",
+      "githubUrl": "https://github.com/Udayai-sudo/DigitalNotes/tree/book/notes-java-introduction-2",
+      "pagesUrl": "https://udayai-sudo.github.io/DigitalNotes/notes-java-introduction-2/",
+      "docx": "notes-java-introduction-2.docx"
+    },
+    {
       "slug": "notes-java-introduction-3",
       "branch": "book/notes-java-introduction-3",
       "title": "Notes Java Introduction-3",
