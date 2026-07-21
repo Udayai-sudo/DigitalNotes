@@ -1,0 +1,11 @@
+{
+  "title": "Notes Java Demo 3",
+  "itemsPerPage": 2,
+  "source": "notes-java-demo-3.docx",
+  "items": [
+    {
+      "question": "What should be understood after learning the working of a Web Application?",
+      "answer": "Answer: After understanding how a Web Application works, we should understand what is present inside the Web Application and what technologies are required to build it. What is the purpose of the Resource Path in a Request String? Answer: The Resource Path is used to identify the particular resource. Using the Request String, we locate that particular resource and send the request to it. What is UI Data or Form Data? Answer: UI Data or Form Data is the second part of the Request String. It contains the data entered by the user and is sent along with the request. These questions are based only on the technical concepts discussed in the transcript, and the answers follow the transcript's wording as closely as possible rather than being rewritten into textbook-style explanations."
+    }
+  ]
+}
