@@ -107,6 +107,15 @@
       "docx": "java-variable-1.docx"
     },
     {
+      "slug": "notes-java-demo-1",
+      "branch": "book/notes-java-demo-1",
+      "title": "Notes Java Demo-1",
+      "source": "notes-java-demo-1.docx",
+      "githubUrl": "https://github.com/Udayai-sudo/DigitalNotes/tree/book/notes-java-demo-1",
+      "pagesUrl": "https://udayai-sudo.github.io/DigitalNotes/notes-java-demo-1/",
+      "docx": "notes-java-demo-1.docx"
+    },
+    {
       "slug": "notes-java-introduction-3",
       "branch": "book/notes-java-introduction-3",
       "title": "Notes Java Introduction-3",
